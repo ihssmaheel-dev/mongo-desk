@@ -134,6 +134,7 @@ build/
 
 # Tauri
 src-tauri/target/
+src-tauri/gen/
 
 # OS files
 .DS_Store
