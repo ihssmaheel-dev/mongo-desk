@@ -1,0 +1,42 @@
+[package]
+name = "mongo-desk"
+version = "1.0.0"
+description = "Ultra-fast, lightweight, modern MongoDB desktop client"
+authors = ["ihssmaheel-dev"]
+license = "MIT"
+repository = "https://github.com/ihssmaheel-dev/mongo-desk"
+edition = "2021"
+
+[lib]
+name = "mongo_desk_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+mongodb = "3"
+rusqlite = { version = "0.31", features = ["bundled"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+aes-gcm = "0.10"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+parking_lot = "0.12"
+bytes = "1"
+futures = "0.3"
+csv = "1.3"
+bson = "2"
+sha2 = "0.10"
+hmac = "0.12"
+keyring = "3"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
