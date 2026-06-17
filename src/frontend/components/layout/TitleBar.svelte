@@ -14,6 +14,7 @@
   
   <div class="flex">
     <button
+      aria-label="Minimize"
       class="flex h-9 w-12 items-center justify-center text-white/70 hover:bg-white/10 hover:text-white"
       onclick={() => {}}
     >
@@ -22,6 +23,7 @@
       </svg>
     </button>
     <button
+      aria-label="Maximize"
       class="flex h-9 w-12 items-center justify-center text-white/70 hover:bg-white/10 hover:text-white"
       onclick={() => {}}
     >
@@ -34,6 +36,7 @@
       </svg>
     </button>
     <button
+      aria-label="Close"
       class="flex h-9 w-12 items-center justify-center text-white/70 hover:bg-semantic-danger hover:text-white"
       onclick={() => {}}
     >

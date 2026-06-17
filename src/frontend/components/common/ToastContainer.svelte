@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { errorStore } from '../../stores/errorStore';
+  import { errorStore } from '../../stores/errorStore.svelte';
   import Toast from './Toast.svelte';
 </script>
 

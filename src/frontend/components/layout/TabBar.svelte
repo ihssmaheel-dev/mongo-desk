@@ -16,19 +16,23 @@
         onclick={() => onSelect(tab.id)}
       >
         <span class="truncate">{tab.title}</span>
-        <button
+        <span
+          role="button"
+          tabindex="0"
           class="ml-1 rounded p-0.5 text-slate-400 hover:bg-slate-300 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-          onclick|stopPropagation={() => onClose(tab.id)}
+          onclick={(e) => { e.stopPropagation(); onClose(tab.id); }}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onClose(tab.id); } }}
         >
           <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </span>
       </button>
     {/each}
   </div>
   
   <button
+    aria-label="Add tab"
     class="flex h-9 w-9 items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
     onclick={onAdd}
   >

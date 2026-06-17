@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AppShell from './components/layout/AppShell.svelte';
+  import AppShell from './frontend/components/layout/AppShell.svelte';
 </script>
 
 <AppShell />

@@ -1,19 +1,19 @@
 <script lang="ts">
-  import type { ErrorEntry } from '../stores/errorStore';
+  import type { ErrorEntry } from '../../stores/errorStore.svelte';
   
-  let { error }: { error: ErrorEntry } = $props();
+  let { error, onDismiss }: { error: ErrorEntry; onDismiss?: (id: string) => void } = $props();
   
-  const bgColor = {
+  let bgColor = $derived({
     transient: 'bg-slate-100 dark:bg-slate-800',
     persistent: 'bg-semantic-danger/10 dark:bg-semantic-danger/20',
     fatal: 'bg-semantic-danger dark:bg-semantic-danger/30',
-  }[error.severity];
+  }[error.severity]);
   
-  const textColor = {
+  let textColor = $derived({
     transient: 'text-slate-900 dark:text-slate-100',
     persistent: 'text-semantic-danger',
     fatal: 'text-white',
-  }[error.severity];
+  }[error.severity]);
 </script>
 
 <div class="rounded-md {bgColor} p-4 shadow-lg">
@@ -29,8 +29,9 @@
       {/if}
     </div>
     <button
+      aria-label="Dismiss"
       class="ml-4 {textColor} opacity-50 hover:opacity-100"
-      onclick={() => {}}
+      onclick={() => onDismiss?.(error.id)}
     >
       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
