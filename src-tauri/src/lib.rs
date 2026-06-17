@@ -1,3 +1,5 @@
+use tauri::Manager;
+
 mod commands;
 mod db;
 mod error;
@@ -19,7 +21,17 @@ pub fn run() {
             app.manage(app_state);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            commands::connection::add_connection,
+            commands::connection::update_connection,
+            commands::connection::delete_connection,
+            commands::connection::test_connection,
+            commands::connection::list_connections,
+            commands::connection::list_connection_groups,
+            commands::connection::add_connection_group,
+            commands::connection::import_connections,
+            commands::connection::export_connections,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -66,3 +66,11 @@ pub struct ConnectionTestResult {
     pub message: String,
     pub databases: Option<Vec<String>>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectionFavorite {
+    pub id: String,
+    pub connection_id: String,
+    pub sort_order: i32,
+    pub created_at: String,
+}
