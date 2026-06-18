@@ -1,36 +1,20 @@
 <script lang="ts">
+  import { getCurrentWindow } from '@tauri-apps/api/window';
+
   let { title = 'MongoDesk' }: { title?: string } = $props();
 
-  async function minimize() {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().minimize();
-    } catch (e) {
-      console.error('minimize failed:', e);
-    }
+  const appWindow = getCurrentWindow();
+
+  function minimize() {
+    appWindow.minimize();
   }
 
-  async function toggleMaximize() {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const win = getCurrentWindow();
-      if (await win.isMaximized()) {
-        await win.unmaximize();
-      } else {
-        await win.maximize();
-      }
-    } catch (e) {
-      console.error('maximize failed:', e);
-    }
+  function toggleMaximize() {
+    appWindow.toggleMaximize();
   }
 
-  async function close() {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().close();
-    } catch (e) {
-      console.error('close failed:', e);
-    }
+  function close() {
+    appWindow.close();
   }
 </script>
 
@@ -42,7 +26,7 @@
     <span class="text-[12px] font-semibold text-white">{title}</span>
   </div>
 
-  <div class="flex" data-tauri-drag-region="false">
+  <div class="flex">
     <button
       data-tauri-drag-region="false"
       aria-label="Minimize"
