@@ -3,11 +3,13 @@ use std::collections::HashMap;
 use crate::error::AppError;
 use tokio_util::sync::CancellationToken;
 
+#[allow(dead_code)]
 pub struct WorkerPool {
     workers: HashMap<String, CancellationToken>,
     max_workers: usize,
 }
 
+#[allow(dead_code)]
 impl WorkerPool {
     pub fn new(max_workers: usize) -> Self {
         Self {

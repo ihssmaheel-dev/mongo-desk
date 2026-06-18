@@ -6,10 +6,12 @@ use aes_gcm::aead::rand_core::RngCore;
 
 use crate::error::AppError;
 
+#[allow(dead_code)]
 pub struct EncryptionService {
     key: [u8; 32],
 }
 
+#[allow(dead_code)]
 impl EncryptionService {
     pub fn new() -> Result<Self, AppError> {
         let key = Self::derive_key()?;

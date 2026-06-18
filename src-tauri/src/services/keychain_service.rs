@@ -1,8 +1,10 @@
 use keyring::Entry;
 use crate::error::AppError;
 
+#[allow(dead_code)]
 pub struct KeychainService;
 
+#[allow(dead_code)]
 impl KeychainService {
     pub fn store_credential(service: &str, username: &str, password: &str) -> Result<(), AppError> {
         let entry = Entry::new(service, username)

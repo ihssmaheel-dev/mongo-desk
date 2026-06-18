@@ -67,6 +67,7 @@ pub struct ConnectionTestResult {
     pub databases: Option<Vec<String>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionFavorite {
     pub id: String,

@@ -5,6 +5,7 @@ use chrono::Utc;
 use crate::error::AppError;
 use crate::models::connection::{Connection, UpdateConnection, ConnectionGroup, NewConnectionGroup, ConnectionFavorite};
 
+#[allow(dead_code)]
 pub struct Queries;
 
 impl Queries {
@@ -219,6 +220,7 @@ impl Queries {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn list_favorites(sqlite: &SqliteConn) -> Result<Vec<ConnectionFavorite>, AppError> {
         let mut stmt = sqlite.prepare(
             "SELECT id, connection_id, sort_order, created_at FROM connection_favorites ORDER BY sort_order"
@@ -245,6 +247,7 @@ impl Queries {
         Ok(favorites)
     }
 
+    #[allow(dead_code)]
     pub fn add_favorite(connection_id: &str, sqlite: &SqliteConn) -> Result<ConnectionFavorite, AppError> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
@@ -265,6 +268,7 @@ impl Queries {
         })
     }
 
+    #[allow(dead_code)]
     pub fn remove_favorite(id: &str, sqlite: &SqliteConn) -> Result<(), AppError> {
         sqlite.execute("DELETE FROM connection_favorites WHERE id = ?1", params![id])
             .map_err(|_e| AppError::Internal {
