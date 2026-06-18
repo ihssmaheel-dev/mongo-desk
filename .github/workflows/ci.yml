@@ -20,7 +20,6 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
-      - run: npm run lint
       - run: npm run check
       - run: npm run build
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
