@@ -1,5 +1,4 @@
 use serde::Serialize;
-use tauri::ipc::InvokeError;
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "data")]
@@ -39,36 +38,33 @@ pub enum AppError {
     },
 }
 
-impl From<AppError> for InvokeError {
-    fn from(err: AppError) -> Self {
-        InvokeError::from(serde_json::to_string(&err).unwrap_or_default())
-    }
-}
-
 impl From<mongodb::error::Error> for AppError {
     fn from(err: mongodb::error::Error) -> Self {
-        if err.is_auth_error() {
-            AppError::Auth {
+        match err.kind.as_ref() {
+            mongodb::error::ErrorKind::Authentication { .. } => AppError::Auth {
                 code: "ERR_CONNECTION_AUTH".into(),
                 message: "Authentication failed. Check your username and password.".into(),
-            }
-        } else if err.is_network_error() {
-            AppError::Connection {
+            },
+            mongodb::error::ErrorKind::Io(_) => AppError::Connection {
                 code: "ERR_CONNECTION_REFUSED".into(),
                 message: "Connection refused. Verify MongoDB is running.".into(),
                 detail: Some(err.to_string()),
-            }
-        } else {
-            AppError::Internal {
+            },
+            mongodb::error::ErrorKind::ServerSelection { .. } => AppError::Connection {
+                code: "ERR_CONNECTION_TIMEOUT".into(),
+                message: "Connection timed out. Check your network and connection settings.".into(),
+                detail: Some(err.to_string()),
+            },
+            _ => AppError::Internal {
                 code: "ERR_INTERNAL".into(),
-                message: "An internal error occurred.".into(),
-            }
+                message: err.to_string(),
+            },
         }
     }
 }
 
 impl From<rusqlite::Error> for AppError {
-    fn from(err: rusqlite::Error) -> Self {
+    fn from(_err: rusqlite::Error) -> Self {
         AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Database error.".into(),
@@ -77,7 +73,7 @@ impl From<rusqlite::Error> for AppError {
 }
 
 impl From<serde_json::Error> for AppError {
-    fn from(err: serde_json::Error) -> Self {
+    fn from(_err: serde_json::Error) -> Self {
         AppError::Validation {
             code: "ERR_VALIDATION".into(),
             message: "Invalid JSON.".into(),

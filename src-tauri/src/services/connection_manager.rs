@@ -4,7 +4,7 @@ use mongodb::{Client, options::ClientOptions};
 use std::collections::HashMap;
 
 use crate::error::AppError;
-use crate::models::connection::{Connection, NewConnection, UpdateConnection, ConnectionGroup, NewConnectionGroup, ConnectionTestResult};
+use crate::models::connection::{Connection, ConnectionTestResult};
 
 pub struct ConnectionManager {
     connections: Arc<Mutex<HashMap<String, Client>>>,
@@ -25,7 +25,7 @@ impl ConnectionManager {
         let client = Client::with_options(options)
             .map_err(|e| AppError::connection_refused(Some(e.to_string())))?;
 
-        let db_names = client.list_database_names(None, None)
+        let db_names = client.list_database_names()
             .await
             .map_err(|e| AppError::connection_refused(Some(e.to_string())))?;
 

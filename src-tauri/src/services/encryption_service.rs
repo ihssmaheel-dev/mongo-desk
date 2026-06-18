@@ -17,10 +17,10 @@ impl EncryptionService {
     }
 
     fn derive_key() -> Result<[u8; 32], AppError> {
-        let hostname = hostname::get()
-            .map(|h| h.to_string_lossy().to_string())
+        let hostname = std::env::var("COMPUTERNAME")
+            .or_else(|_| std::env::var("HOSTNAME"))
             .unwrap_or_else(|_| "default".to_string());
-        
+
         let username = std::env::var("USERNAME")
             .or_else(|_| std::env::var("USER"))
             .unwrap_or_else(|_| "default".to_string());
@@ -29,7 +29,7 @@ impl EncryptionService {
         use sha2::Digest;
         hasher.update(format!("{}-{}", hostname, username));
         let result = hasher.finalize();
-        
+
         let mut key = [0u8; 32];
         key.copy_from_slice(&result);
         Ok(key)
@@ -37,7 +37,7 @@ impl EncryptionService {
 
     pub fn encrypt(&self, plaintext: &str) -> Result<Vec<u8>, AppError> {
         let cipher = Aes256Gcm::new_from_slice(&self.key)
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Failed to initialize encryption.".into(),
             })?;
@@ -47,7 +47,7 @@ impl EncryptionService {
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         let ciphertext = cipher.encrypt(nonce, plaintext.as_bytes())
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Encryption failed.".into(),
             })?;
@@ -66,20 +66,20 @@ impl EncryptionService {
         }
 
         let cipher = Aes256Gcm::new_from_slice(&self.key)
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Failed to initialize encryption.".into(),
             })?;
 
         let nonce = Nonce::from_slice(&ciphertext[..12]);
         let plaintext = cipher.decrypt(nonce, &ciphertext[12..])
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Decryption failed.".into(),
             })?;
 
         String::from_utf8(plaintext)
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Invalid UTF-8 in decrypted data.".into(),
             })

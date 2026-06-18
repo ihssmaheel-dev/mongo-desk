@@ -1,14 +1,14 @@
-use rusqlite::{Connection, params, Result};
+use rusqlite::{Connection as SqliteConn, params, Result};
 use uuid::Uuid;
 use chrono::Utc;
 
 use crate::error::AppError;
-use crate::models::connection::{Connection, NewConnection, UpdateConnection, ConnectionGroup, NewConnectionGroup, ConnectionFavorite};
+use crate::models::connection::{Connection, UpdateConnection, ConnectionGroup, NewConnectionGroup, ConnectionFavorite};
 
 pub struct Queries;
 
 impl Queries {
-    pub fn insert_connection(conn: &Connection, sqlite: &Connection) -> Result<Connection, AppError> {
+    pub fn insert_connection(conn: &Connection, sqlite: &SqliteConn) -> Result<Connection, AppError> {
         sqlite.execute(
             "INSERT INTO connections (id, name, connection_string, type, color, read_only, ssl_enabled, ssl_config, group_id, tags, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
@@ -26,7 +26,7 @@ impl Queries {
                 conn.created_at,
                 conn.updated_at,
             ],
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to insert connection.".into(),
         })?;
@@ -34,7 +34,7 @@ impl Queries {
         Ok(conn.clone())
     }
 
-    pub fn get_connection(id: &str, sqlite: &Connection) -> Result<Connection, AppError> {
+    pub fn get_connection(id: &str, sqlite: &SqliteConn) -> Result<Connection, AppError> {
         sqlite.query_row(
             "SELECT id, name, connection_string, type, color, read_only, ssl_enabled, ssl_config, group_id, tags, created_at, updated_at
              FROM connections WHERE id = ?1",
@@ -55,17 +55,17 @@ impl Queries {
                     updated_at: row.get(11)?,
                 })
             },
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Connection not found.".into(),
         })
     }
 
-    pub fn list_connections(sqlite: &Connection) -> Result<Vec<Connection>, AppError> {
+    pub fn list_connections(sqlite: &SqliteConn) -> Result<Vec<Connection>, AppError> {
         let mut stmt = sqlite.prepare(
             "SELECT id, name, connection_string, type, color, read_only, ssl_enabled, ssl_config, group_id, tags, created_at, updated_at
              FROM connections ORDER BY name"
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to list connections.".into(),
         })?;
@@ -85,10 +85,10 @@ impl Queries {
                 created_at: row.get(10)?,
                 updated_at: row.get(11)?,
             })
-        }).map_err(|e| AppError::Internal {
+        }).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to list connections.".into(),
-        })?.collect::<Result<Vec<_>>>().map_err(|e| AppError::Internal {
+        })?.collect::<Result<Vec<_>>>().map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to collect connections.".into(),
         })?;
@@ -96,9 +96,9 @@ impl Queries {
         Ok(connections)
     }
 
-    pub fn update_connection(id: &str, update: &UpdateConnection, sqlite: &Connection) -> Result<Connection, AppError> {
+    pub fn update_connection(id: &str, update: &UpdateConnection, sqlite: &SqliteConn) -> Result<Connection, AppError> {
         let mut conn = Self::get_connection(id, sqlite)?;
-        
+
         if let Some(name) = &update.name {
             conn.name = name.clone();
         }
@@ -126,7 +126,7 @@ impl Queries {
         if let Some(tags) = &update.tags {
             conn.tags = Some(tags.clone());
         }
-        
+
         conn.updated_at = Utc::now().to_rfc3339();
 
         sqlite.execute(
@@ -145,7 +145,7 @@ impl Queries {
                 conn.updated_at,
                 conn.id,
             ],
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to update connection.".into(),
         })?;
@@ -153,19 +153,19 @@ impl Queries {
         Ok(conn)
     }
 
-    pub fn delete_connection(id: &str, sqlite: &Connection) -> Result<(), AppError> {
+    pub fn delete_connection(id: &str, sqlite: &SqliteConn) -> Result<(), AppError> {
         sqlite.execute("DELETE FROM connections WHERE id = ?1", params![id])
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Failed to delete connection.".into(),
             })?;
         Ok(())
     }
 
-    pub fn list_groups(sqlite: &Connection) -> Result<Vec<ConnectionGroup>, AppError> {
+    pub fn list_groups(sqlite: &SqliteConn) -> Result<Vec<ConnectionGroup>, AppError> {
         let mut stmt = sqlite.prepare(
             "SELECT id, name, parent_id, sort_order, created_at FROM connection_groups ORDER BY sort_order, name"
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to list groups.".into(),
         })?;
@@ -178,10 +178,10 @@ impl Queries {
                 sort_order: row.get(3)?,
                 created_at: row.get(4)?,
             })
-        }).map_err(|e| AppError::Internal {
+        }).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to list groups.".into(),
-        })?.collect::<Result<Vec<_>>>().map_err(|e| AppError::Internal {
+        })?.collect::<Result<Vec<_>>>().map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to collect groups.".into(),
         })?;
@@ -189,14 +189,14 @@ impl Queries {
         Ok(groups)
     }
 
-    pub fn insert_group(group: &NewConnectionGroup, sqlite: &Connection) -> Result<ConnectionGroup, AppError> {
+    pub fn insert_group(group: &NewConnectionGroup, sqlite: &SqliteConn) -> Result<ConnectionGroup, AppError> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
 
         sqlite.execute(
             "INSERT INTO connection_groups (id, name, parent_id, sort_order, created_at) VALUES (?1, ?2, ?3, 0, ?4)",
             params![id, group.name, group.parent_id, now],
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to insert group.".into(),
         })?;
@@ -210,19 +210,19 @@ impl Queries {
         })
     }
 
-    pub fn delete_group(id: &str, sqlite: &Connection) -> Result<(), AppError> {
+    pub fn delete_group(id: &str, sqlite: &SqliteConn) -> Result<(), AppError> {
         sqlite.execute("DELETE FROM connection_groups WHERE id = ?1", params![id])
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Failed to delete group.".into(),
             })?;
         Ok(())
     }
 
-    pub fn list_favorites(sqlite: &Connection) -> Result<Vec<ConnectionFavorite>, AppError> {
+    pub fn list_favorites(sqlite: &SqliteConn) -> Result<Vec<ConnectionFavorite>, AppError> {
         let mut stmt = sqlite.prepare(
             "SELECT id, connection_id, sort_order, created_at FROM connection_favorites ORDER BY sort_order"
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to list favorites.".into(),
         })?;
@@ -234,10 +234,10 @@ impl Queries {
                 sort_order: row.get(2)?,
                 created_at: row.get(3)?,
             })
-        }).map_err(|e| AppError::Internal {
+        }).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to list favorites.".into(),
-        })?.collect::<Result<Vec<_>>>().map_err(|e| AppError::Internal {
+        })?.collect::<Result<Vec<_>>>().map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to collect favorites.".into(),
         })?;
@@ -245,14 +245,14 @@ impl Queries {
         Ok(favorites)
     }
 
-    pub fn add_favorite(connection_id: &str, sqlite: &Connection) -> Result<ConnectionFavorite, AppError> {
+    pub fn add_favorite(connection_id: &str, sqlite: &SqliteConn) -> Result<ConnectionFavorite, AppError> {
         let id = Uuid::new_v4().to_string();
         let now = Utc::now().to_rfc3339();
 
         sqlite.execute(
             "INSERT INTO connection_favorites (id, connection_id, sort_order, created_at) VALUES (?1, ?2, 0, ?3)",
             params![id, connection_id, now],
-        ).map_err(|e| AppError::Internal {
+        ).map_err(|_e| AppError::Internal {
             code: "ERR_INTERNAL".into(),
             message: "Failed to add favorite.".into(),
         })?;
@@ -265,9 +265,9 @@ impl Queries {
         })
     }
 
-    pub fn remove_favorite(id: &str, sqlite: &Connection) -> Result<(), AppError> {
+    pub fn remove_favorite(id: &str, sqlite: &SqliteConn) -> Result<(), AppError> {
         sqlite.execute("DELETE FROM connection_favorites WHERE id = ?1", params![id])
-            .map_err(|e| AppError::Internal {
+            .map_err(|_e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
                 message: "Failed to remove favorite.".into(),
             })?;
