@@ -32,3 +32,11 @@ export interface CollectionStats {
   total_size: number | null;
   indexes: number | null;
 }
+
+export interface DocumentPage {
+  documents: Record<string, unknown>[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}

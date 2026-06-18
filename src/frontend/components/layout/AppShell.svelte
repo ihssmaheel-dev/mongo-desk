@@ -5,6 +5,7 @@
   import StatusBar from './StatusBar.svelte';
   import ToastContainer from '../common/ToastContainer.svelte';
   import ErrorBoundary from '../common/ErrorBoundary.svelte';
+  import DocumentViewer from '../documents/DocumentViewer.svelte';
   import { connectionStore } from '../../stores/connectionStore';
 
   let activeView = $state('connections');
@@ -25,15 +26,15 @@
     <Sidebar onSelectCollection={handleSelectCollection} />
 
     <div class="flex flex-1 flex-col overflow-hidden">
-      <div class="flex-1 overflow-auto p-4">
+      <div class="flex-1 overflow-hidden">
         <ErrorBoundary>
-          {#if activeCollection}
-            <div class="flex h-full items-center justify-center">
-              <div class="text-center">
-                <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{activeCollection}</h2>
-                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{connectionStore.activeConnection?.name} / {activeDatabase} / {activeCollection}</p>
-              </div>
-            </div>
+          {#if activeCollection && connectionStore.activeConnectionId}
+            <DocumentViewer
+              connectionId={connectionStore.activeConnectionId}
+              database={activeDatabase}
+              collection={activeCollection}
+              onSelect={handleSelectCollection}
+            />
           {:else if connectionStore.activeConnection}
             <div class="flex h-full items-center justify-center">
               <div class="text-center">
