@@ -1,5 +1,6 @@
 <script lang="ts">
   import { documentStore } from '../../stores/documentStore';
+  import ConfirmDialog from '../common/ConfirmDialog.svelte';
 
   let { connectionId, database, collection, onSelect }: {
     connectionId: string;
@@ -15,6 +16,7 @@
   let selectedDoc = $state<any>(null);
   let selectedIdx = $state<number>(-1);
   let columns = $state<string[]>([]);
+  let showDeleteConfirm = $state(false);
 
   const pageSize = 50;
   const totalPages = $derived(Math.ceil(totalCount / pageSize));
@@ -80,7 +82,7 @@
   async function handleDelete() {
     if (selectedDoc) {
       const id = selectedDoc._id?.$oid || selectedDoc._id;
-      if (id && confirm('Delete this document?')) {
+      if (id) {
         await documentStore.deleteDocument(id);
         selectedDoc = null;
         selectedIdx = -1;
@@ -95,10 +97,6 @@
 
   function goPrev() {
     if (page > 0) loadDocs(page - 1);
-  }
-
-  function formatFieldName(name: string): string {
-    return name.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
   }
 </script>
 
@@ -115,7 +113,7 @@
         Refresh
       </button>
       {#if selectedDoc}
-        <button class="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10 transition-colors" onclick={handleDelete}>
+        <button class="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10 transition-colors" onclick={() => showDeleteConfirm = true}>
           <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           Delete
         </button>
@@ -191,3 +189,12 @@
     </div>
   {/if}
 </div>
+
+<ConfirmDialog
+  bind:open={showDeleteConfirm}
+  title="Delete Document"
+  message="Are you sure you want to delete this document? This action cannot be undone."
+  confirmText="Delete"
+  variant="danger"
+  onConfirm={handleDelete}
+/>
