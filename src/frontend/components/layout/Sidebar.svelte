@@ -6,8 +6,9 @@
   import DatabaseTree from '../explorer/DatabaseTree.svelte';
   import type { Connection } from '../../types/connection';
 
-  let { onSelectCollection }: {
+  let { onSelectCollection, onSelectConnection }: {
     onSelectCollection: (db: string, coll: string) => void;
+    onSelectConnection: (id: string) => void;
   } = $props();
 
   let showAddDialog = $state(false);
@@ -46,6 +47,7 @@
     connectionStore.setActiveConnection(id);
     activeDatabase = '';
     activeCollection = '';
+    onSelectConnection(id);
   }
 
   function handleSelectCollection(db: string, coll: string) {
