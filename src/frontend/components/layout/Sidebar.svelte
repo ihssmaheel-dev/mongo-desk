@@ -3,16 +3,19 @@
   import { connectionStore } from '../../stores/connectionStore';
   import ConnectionTree from '../connection/ConnectionTree.svelte';
   import ConnectionDialog from '../connection/ConnectionDialog.svelte';
+  import DatabaseTree from '../explorer/DatabaseTree.svelte';
   import type { Connection } from '../../types/connection';
 
-  let { onSelectConnection }: {
-    onSelectConnection: (id: string) => void;
+  let { onSelectCollection }: {
+    onSelectCollection: (db: string, coll: string) => void;
   } = $props();
 
   let showAddDialog = $state(false);
   let searchQuery = $state('');
   let connections = $state<Connection[]>([]);
   let loading = $state(false);
+  let activeDatabase = $state('');
+  let activeCollection = $state('');
 
   let filteredConnections = $derived(
     searchQuery
@@ -40,7 +43,12 @@
 
   function handleSelectConnection(id: string) {
     connectionStore.setActiveConnection(id);
-    onSelectConnection(id);
+  }
+
+  function handleSelectCollection(db: string, coll: string) {
+    activeDatabase = db;
+    activeCollection = coll;
+    onSelectCollection(db, coll);
   }
 </script>
 
@@ -86,6 +94,13 @@
         connections={filteredConnections}
         activeConnectionId={connectionStore.activeConnectionId}
         onSelect={handleSelectConnection}
+      />
+
+      <DatabaseTree
+        connectionId={connectionStore.activeConnectionId || ''}
+        {activeDatabase}
+        {activeCollection}
+        onSelectCollection={handleSelectCollection}
       />
     {/if}
   </div>

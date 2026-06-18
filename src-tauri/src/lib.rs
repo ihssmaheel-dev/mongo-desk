@@ -31,6 +31,14 @@ pub fn run() {
             commands::connection::add_connection_group,
             commands::connection::import_connections,
             commands::connection::export_connections,
+            commands::database::list_databases,
+            commands::database::get_database_stats,
+            commands::database::drop_database,
+            commands::collection::list_collections,
+            commands::collection::get_collection_stats,
+            commands::collection::create_collection,
+            commands::collection::drop_collection,
+            commands::collection::rename_collection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

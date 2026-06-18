@@ -8,9 +8,12 @@
   import { connectionStore } from '../../stores/connectionStore';
 
   let activeView = $state('connections');
+  let activeDatabase = $state('');
+  let activeCollection = $state('');
 
-  function handleSelectConnection(id: string) {
-    connectionStore.setActiveConnection(id);
+  function handleSelectCollection(db: string, coll: string) {
+    activeDatabase = db;
+    activeCollection = coll;
   }
 </script>
 
@@ -19,16 +22,23 @@
 
   <div class="flex flex-1 overflow-hidden">
     <ActivityBar {activeView} onViewChange={(v) => activeView = v} />
-    <Sidebar onSelectConnection={handleSelectConnection} />
+    <Sidebar onSelectCollection={handleSelectCollection} />
 
     <div class="flex flex-1 flex-col overflow-hidden">
       <div class="flex-1 overflow-auto p-4">
         <ErrorBoundary>
-          {#if connectionStore.activeConnection}
+          {#if activeCollection}
+            <div class="flex h-full items-center justify-center">
+              <div class="text-center">
+                <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{activeCollection}</h2>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{connectionStore.activeConnection?.name} / {activeDatabase} / {activeCollection}</p>
+              </div>
+            </div>
+          {:else if connectionStore.activeConnection}
             <div class="flex h-full items-center justify-center">
               <div class="text-center">
                 <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{connectionStore.activeConnection.name}</h2>
-                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Connected to {connectionStore.activeConnection.connection_string}</p>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Select a collection to view documents</p>
               </div>
             </div>
           {:else}
@@ -47,6 +57,8 @@
   <StatusBar
     connectionStatus={connectionStore.activeConnectionId ? 'connected' : 'disconnected'}
     connectionName={connectionStore.activeConnection?.name || ''}
+    database={activeDatabase}
+    collection={activeCollection}
   />
 </div>
 
