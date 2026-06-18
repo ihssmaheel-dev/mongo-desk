@@ -1,6 +1,6 @@
 <script lang="ts">
   let { activeView = 'connections', onViewChange }: { activeView?: string; onViewChange?: (view: string) => void } = $props();
-  
+
   const icons = [
     { id: 'connections', label: 'Connections', path: 'M4 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
     { id: 'search', label: 'Search', path: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
@@ -10,16 +10,16 @@
   ];
 </script>
 
-<div class="flex h-full w-12 flex-col items-center bg-slate-100 py-2 dark:bg-slate-900">
+<nav class="flex h-full w-11 flex-col items-center border-r border-[#2D3A45] bg-[#161D24] py-2">
   {#each icons as icon}
     <button
-      class="mb-1 flex h-10 w-10 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 {activeView === icon.id ? 'bg-brand-mist text-brand-evergreen dark:bg-brand-forest/30 dark:text-brand-spring' : ''}"
+      class="mb-1 flex h-9 w-9 items-center justify-center rounded-md text-[#465A6B] transition-colors hover:bg-[#1F2933] hover:text-[#C3D4DE] {activeView === icon.id ? 'bg-[#023430] text-[#00ED64]' : ''}"
       title={icon.label}
       onclick={() => onViewChange?.(icon.id)}
     >
-      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={icon.path} />
+      <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d={icon.path} />
       </svg>
     </button>
   {/each}
-</div>
+</nav>

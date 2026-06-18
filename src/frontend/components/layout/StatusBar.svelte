@@ -1,48 +1,36 @@
 <script lang="ts">
-  let { 
+  let {
     connectionStatus = 'disconnected',
     connectionName = '',
     database = '',
     collection = '',
-    documentCount = 0,
-    queryTime = 0,
   }: {
     connectionStatus?: 'connected' | 'connecting' | 'error' | 'disconnected';
     connectionName?: string;
     database?: string;
     collection?: string;
-    documentCount?: number;
-    queryTime?: number;
   } = $props();
-  
-  const statusColors = {
-    connected: 'bg-semantic-success',
-    connecting: 'bg-semantic-warning',
-    error: 'bg-semantic-danger',
-    disconnected: 'bg-slate-400',
-  };
 </script>
 
-<div class="flex h-6 items-center justify-between border-t border-slate-200 bg-slate-100 px-3 dark:border-slate-700 dark:bg-slate-900">
-  <div class="flex items-center gap-4">
+<footer class="flex h-6 items-center justify-between border-t border-[#2D3A45] bg-[#161D24] px-3 select-none">
+  <div class="flex items-center gap-3">
     <div class="flex items-center gap-1.5">
-      <div class="h-2 w-2 rounded-full {statusColors[connectionStatus]}"></div>
-      <span class="text-xs text-slate-600 dark:text-slate-400">{connectionName || 'Disconnected'}</span>
+      <span class="h-1.5 w-1.5 rounded-full {connectionStatus === 'connected' ? 'bg-[#00ED64] shadow-[0_0_4px_#00ED64]' : connectionStatus === 'error' ? 'bg-[#FF5C5C]' : connectionStatus === 'connecting' ? 'bg-[#FFC010]' : 'bg-[#7E97A7]'}"></span>
+      <span class="text-[10px] text-[#7E97A7]">{connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'connecting' ? 'Connecting...' : connectionStatus === 'error' ? 'Error' : 'Disconnected'}</span>
     </div>
+    {#if connectionName}
+      <span class="text-[10px] text-[#C3D4DE]">{connectionName}</span>
+    {/if}
     {#if database}
-      <span class="text-xs text-slate-500 dark:text-slate-500">{database}</span>
+      <svg class="h-2.5 w-2.5 text-[#2D3A45]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+      <span class="text-[10px] text-[#C3D4DE]">{database}</span>
     {/if}
     {#if collection}
-      <span class="text-xs text-slate-500 dark:text-slate-500">{collection}</span>
-    {/if}
-    {#if documentCount > 0}
-      <span class="text-xs text-slate-500 dark:text-slate-500">{documentCount.toLocaleString()} docs</span>
+      <svg class="h-2.5 w-2.5 text-[#2D3A45]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+      <span class="text-[10px] text-[#C3D4DE]">{collection}</span>
     {/if}
   </div>
-  
-  <div class="flex items-center gap-4">
-    {#if queryTime > 0}
-      <span class="text-xs text-slate-500 dark:text-slate-500">{queryTime}ms</span>
-    {/if}
+  <div class="flex items-center gap-3">
+    <span class="text-[10px] text-[#465A6B]">MongoDesk v1.0</span>
   </div>
-</div>
+</footer>
