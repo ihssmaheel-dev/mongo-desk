@@ -10,14 +10,14 @@
   ];
 </script>
 
-<nav class="flex h-full w-11 flex-col items-center border-r border-[#2D3A45] bg-[#161D24] py-2">
+<nav class="flex h-full w-[44px] flex-col items-center border-r border-[#2D3A45] bg-[#161D24] py-1.5 gap-0.5">
   {#each icons as icon}
     <button
-      class="mb-1 flex h-9 w-9 items-center justify-center rounded-md text-[#465A6B] transition-colors hover:bg-[#1F2933] hover:text-[#C3D4DE] {activeView === icon.id ? 'bg-[#023430] text-[#00ED64]' : ''}"
+      class="flex h-8 w-8 items-center justify-center rounded text-[#465A6B] transition-colors hover:bg-[#1F2933] hover:text-[#C3D4DE] {activeView === icon.id ? 'bg-[#023430] text-[#00ED64]' : ''}"
       title={icon.label}
       onclick={() => onViewChange?.(icon.id)}
     >
-      <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d={icon.path} />
       </svg>
     </button>

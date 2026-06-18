@@ -12,7 +12,7 @@
   } = $props();
 </script>
 
-<footer class="flex h-6 items-center justify-between border-t border-[#2D3A45] bg-[#161D24] px-3 select-none">
+<footer class="flex h-5 items-center justify-between border-t border-[#2D3A45] bg-[#161D24] px-3 select-none">
   <div class="flex items-center gap-3">
     <div class="flex items-center gap-1.5">
       <span class="h-1.5 w-1.5 rounded-full {connectionStatus === 'connected' ? 'bg-[#00ED64] shadow-[0_0_4px_#00ED64]' : connectionStatus === 'error' ? 'bg-[#FF5C5C]' : connectionStatus === 'connecting' ? 'bg-[#FFC010]' : 'bg-[#7E97A7]'}"></span>

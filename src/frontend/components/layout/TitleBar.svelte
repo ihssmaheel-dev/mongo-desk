@@ -3,7 +3,7 @@
 </script>
 
 <header
-  class="flex h-9 items-center justify-between bg-[#023430] px-3 select-none"
+  class="flex h-8 items-center justify-between bg-[#023430] px-3 select-none"
   data-tauri-drag-region
 >
   <div class="flex items-center gap-2">
@@ -16,23 +16,23 @@
   <div class="flex">
     <button
       aria-label="Minimize"
-      class="flex h-9 w-11 items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+      class="flex h-8 w-10 items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors"
     >
-      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" d="M20 12H4" />
       </svg>
     </button>
     <button
       aria-label="Maximize"
-      class="flex h-9 w-11 items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+      class="flex h-8 w-10 items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors"
     >
-      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
       </svg>
     </button>
     <button
       aria-label="Close"
-      class="flex h-9 w-11 items-center justify-center text-white/60 hover:bg-[#FF5C5C] hover:text-white transition-colors"
+      class="flex h-8 w-10 items-center justify-center text-white/60 hover:bg-[#FF5C5C] hover:text-white transition-colors"
     >
       <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12" />
