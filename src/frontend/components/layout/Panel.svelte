@@ -73,7 +73,7 @@
   ></div>
 
   {#if position === 'left' || position === 'top'}
-    <div class="overflow-hidden" style={isHorizontal ? 'height' : 'width'}: {size}px>
+    <div class="overflow-hidden" style="{isHorizontal ? 'height' : 'width'}: {size}px">
       <slot />
     </div>
   {/if}

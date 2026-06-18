@@ -1,54 +1,95 @@
 <script lang="ts">
-  import type { Connection } from '../../types/connection';
+  import { onMount } from 'svelte';
+  import { connectionStore } from '../../stores/connectionStore';
   import ConnectionTree from '../connection/ConnectionTree.svelte';
   import ConnectionDialog from '../connection/ConnectionDialog.svelte';
-  
-  let { connections = [], activeConnectionId = null, onSelectConnection, onAddConnection }: {
-    connections: Connection[];
-    activeConnectionId?: string | null;
+
+  let { onSelectConnection }: {
     onSelectConnection: (id: string) => void;
-    onAddConnection: (conn: any) => void;
   } = $props();
-  
+
   let showAddDialog = $state(false);
   let searchQuery = $state('');
-  
+
   let filteredConnections = $derived(
     searchQuery
-      ? connections.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      : connections
+      ? connectionStore.connections.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      : connectionStore.connections
   );
+
+  onMount(async () => {
+    await connectionStore.loadConnections();
+    await connectionStore.loadGroups();
+  });
+
+  async function handleAddConnection(conn: any) {
+    await connectionStore.addConnection(conn);
+    showAddDialog = false;
+  }
+
+  function handleSelectConnection(id: string) {
+    connectionStore.setActiveConnection(id);
+    onSelectConnection(id);
+  }
 </script>
 
-<div class="flex h-full w-64 flex-col border-r border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
-  <div class="border-b border-slate-200 p-2 dark:border-slate-700">
-    <input
-      type="text"
-      bind:value={searchQuery}
-      placeholder="Search connections..."
-      class="w-full rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:border-brand-evergreen focus:outline-none focus:ring-1 focus:ring-brand-evergreen dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-    />
+<aside class="flex h-full w-[240px] flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-panel)]">
+  <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-3 py-2">
+    <span class="text-[11px] font-medium uppercase tracking-wider text-[var(--text-tertiary)]">Connections</span>
+    <div class="flex items-center gap-0.5">
+      <button
+        aria-label="Add connection"
+        class="rounded-[var(--radius-sm)] p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
+        onclick={() => showAddDialog = true}
+      >
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+      <button
+        aria-label="Refresh"
+        class="rounded-[var(--radius-sm)] p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
+        onclick={() => connectionStore.loadConnections()}
+      >
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
   </div>
-  
-  <div class="flex-1 overflow-y-auto">
-    <ConnectionTree
-      connections={filteredConnections}
-      {activeConnectionId}
-      onSelect={onSelectConnection}
-    />
+
+  <div class="flex-1 overflow-y-auto px-1.5 py-1">
+    <div class="mb-2 px-1.5">
+      <input
+        type="text"
+        bind:value={searchQuery}
+        placeholder="Search..."
+        class="w-full rounded border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1 text-[11px] text-[var(--text-secondary)] placeholder-[var(--text-tertiary)] outline-none focus:border-emerald-500"
+      />
+    </div>
+
+    {#if connectionStore.loading}
+      <div class="px-3 py-4 text-center text-[11px] text-[var(--text-tertiary)]">Loading...</div>
+    {:else}
+      <ConnectionTree
+        connections={filteredConnections}
+        activeConnectionId={connectionStore.activeConnectionId}
+        onSelect={handleSelectConnection}
+      />
+    {/if}
   </div>
-  
-  <div class="border-t border-slate-200 p-2 dark:border-slate-700">
+
+  <div class="border-t border-[var(--border-subtle)] p-2">
     <button
-      class="flex w-full items-center justify-center gap-2 rounded-sm bg-brand-evergreen px-3 py-2 text-xs font-medium text-white hover:bg-brand-spring-dim"
+      class="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-3 py-2 text-[12px] font-medium text-white transition-colors hover:bg-emerald-400"
       onclick={() => showAddDialog = true}
     >
-      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" d="M12 4v16m8-8H4" />
       </svg>
       New Connection
     </button>
   </div>
-</div>
+</aside>
 
-<ConnectionDialog bind:open={showAddDialog} onSave={onAddConnection} />
+<ConnectionDialog bind:open={showAddDialog} onSave={handleAddConnection} />

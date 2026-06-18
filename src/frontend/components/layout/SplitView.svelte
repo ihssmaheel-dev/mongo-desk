@@ -62,7 +62,7 @@
   class="flex {isHorizontal ? 'flex-row' : 'flex-col'} overflow-hidden"
   style="width: 100%; height: 100%"
 >
-  <div class="overflow-hidden" style={isHorizontal ? 'width' : 'height'}: {firstSize}px>
+  <div class="overflow-hidden" style="{isHorizontal ? 'width' : 'height'}: {firstSize}px">
     <slot name="first" />
   </div>
 

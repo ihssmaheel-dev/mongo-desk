@@ -36,6 +36,7 @@ bson = "2"
 sha2 = "0.10"
 hmac = "0.12"
 keyring = "3"
+dirs = "5"
 
 [features]
 default = ["custom-protocol"]
