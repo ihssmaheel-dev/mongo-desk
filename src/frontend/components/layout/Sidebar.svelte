@@ -3,6 +3,7 @@
   import { connectionStore } from '../../stores/connectionStore';
   import ConnectionTree from '../connection/ConnectionTree.svelte';
   import ConnectionDialog from '../connection/ConnectionDialog.svelte';
+  import type { Connection } from '../../types/connection';
 
   let { onSelectConnection }: {
     onSelectConnection: (id: string) => void;
@@ -10,21 +11,31 @@
 
   let showAddDialog = $state(false);
   let searchQuery = $state('');
+  let connections = $state<Connection[]>([]);
+  let loading = $state(false);
 
   let filteredConnections = $derived(
     searchQuery
-      ? connectionStore.connections.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      : connectionStore.connections
+      ? connections.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      : connections
   );
 
-  onMount(async () => {
+  async function refresh() {
+    loading = true;
     await connectionStore.loadConnections();
+    connections = [...connectionStore.connections];
+    loading = false;
+  }
+
+  onMount(async () => {
+    await refresh();
     await connectionStore.loadGroups();
   });
 
   async function handleAddConnection(conn: any) {
     await connectionStore.addConnection(conn);
     showAddDialog = false;
+    await refresh();
   }
 
   function handleSelectConnection(id: string) {
@@ -39,7 +50,7 @@
     <div class="flex items-center gap-0.5">
       <button
         aria-label="Add connection"
-        class="rounded-[var(--radius-sm)] p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
+        class="rounded p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
         onclick={() => showAddDialog = true}
       >
         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -48,8 +59,8 @@
       </button>
       <button
         aria-label="Refresh"
-        class="rounded-[var(--radius-sm)] p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
-        onclick={() => connectionStore.loadConnections()}
+        class="rounded p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
+        onclick={refresh}
       >
         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -68,7 +79,7 @@
       />
     </div>
 
-    {#if connectionStore.loading}
+    {#if loading}
       <div class="px-3 py-4 text-center text-[11px] text-[var(--text-tertiary)]">Loading...</div>
     {:else}
       <ConnectionTree
