@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TitleBar from './TitleBar.svelte';
   import ActivityBar from './ActivityBar.svelte';
   import Sidebar from './Sidebar.svelte';

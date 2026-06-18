@@ -15,7 +15,6 @@
   let isHorizontal = $derived(split === 'horizontal');
 
   const firstSize = $derived(Math.max(minSize, containerSize * splitRatio));
-  const secondSize = $derived(containerSize - firstSize - 4);
 
   onMount(() => {
     const observer = new ResizeObserver((entries) => {
