@@ -92,7 +92,7 @@
   }
 
   function goNext() {
-    if (documents.length === pageSize) loadDocs(page + 1);
+    if (documents.length >= pageSize) loadDocs(page + 1);
   }
 
   function goPrev() {
