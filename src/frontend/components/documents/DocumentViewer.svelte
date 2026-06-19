@@ -146,11 +146,14 @@
       } else if (columns.length === 0) {
         try {
           const { tauriInvoke } = await import('../../services/tauriBridge');
-          const { data } = await tauriInvoke<string[]>('get_collection_fields', { connectionId, database, collection });
-          if (data && data.length > 0) {
-            columns = data;
-            for (const col of columns) {
-              if (!fieldTypes[col]) fieldTypes[col] = 'string';
+          const [fieldsResult, typesResult] = await Promise.all([
+            tauriInvoke<string[]>('get_collection_fields', { connectionId, database, collection }),
+            tauriInvoke<Record<string, string>>('get_collection_field_types', { connectionId, database, collection }),
+          ]);
+          if (fieldsResult.data && fieldsResult.data.length > 0) {
+            columns = fieldsResult.data;
+            if (typesResult.data) {
+              Object.assign(fieldTypes, typesResult.data);
             }
           }
         } catch {}

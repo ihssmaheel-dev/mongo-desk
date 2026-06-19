@@ -225,4 +225,43 @@ impl DocumentService {
         fields.sort();
         Ok(fields)
     }
+
+    pub async fn get_collection_field_types(client: &Client, db_name: &str, coll_name: &str) -> Result<std::collections::HashMap<String, String>, AppError> {
+        let coll = Self::get_collection(client, db_name, coll_name);
+
+        let mut cursor = coll.find(mongodb::bson::doc! {})
+            .limit(100)
+            .await
+            .map_err(|e| AppError::Internal {
+                code: "ERR_INTERNAL".into(),
+                message: format!("Failed to sample documents: {}", e),
+            })?;
+
+        let mut field_types: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+
+        while cursor.advance().await.map_err(|e| AppError::Internal {
+            code: "ERR_INTERNAL".into(),
+            message: format!("Failed to iterate: {}", e),
+        })? {
+            let raw = cursor.current();
+            if let Ok(doc) = bson::from_slice::<Document>(raw.as_bytes()) {
+                for (key, value) in doc.iter() {
+                    if field_types.contains_key(key) { continue; }
+                    let t = match value {
+                        Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) => "number",
+                        Bson::Boolean(_) => "boolean",
+                        Bson::ObjectId(_) => "objectId",
+                        Bson::DateTime(_) => "date",
+                        Bson::Array(_) => "array",
+                        Bson::Document(_) => "object",
+                        Bson::Null => "string",
+                        _ => "string",
+                    };
+                    field_types.insert(key.clone(), t.to_string());
+                }
+            }
+        }
+
+        Ok(field_types)
+    }
 }
