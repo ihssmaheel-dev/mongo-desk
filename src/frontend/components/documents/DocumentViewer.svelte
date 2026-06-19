@@ -307,8 +307,10 @@
         {columns}
         {sortField}
         {sortDir}
+        {filters}
         onRowClick={(doc, idx) => selectDoc(doc, idx)}
         onSort={(field, dir) => { sortField = field; sortDir = dir || 'asc'; executeQuery(0); }}
+        onFilter={(col) => openFilter(col)}
       />
     </div>
   {:else}
