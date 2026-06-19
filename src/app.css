@@ -4,74 +4,77 @@
 
 @layer base {
   :root {
-    --bg-app: #F7FAFA;
-    --bg-panel: #EEF3F4;
-    --bg-surface: #FFFFFF;
-    --border-default: #C3D4DE;
-    --border-subtle: #DCE6EA;
-    --text-primary: #161D24;
-    --text-secondary: #5A6B78;
-    --text-tertiary: #7E97A7;
-    --accent-primary: #00684A;
-    --accent-primary-subtle: #E3FCF7;
-    --success: #00ED64;
-    --danger: #FF5C5C;
-    --warning: #FFC010;
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 10px;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 142.1 76.2% 36.3%;
+    --radius: 0.5rem;
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
   }
 
   .dark {
-    --bg-app: #0E1318;
-    --bg-panel: #161D24;
-    --bg-surface: #1F2933;
-    --border-default: #2D3A45;
-    --border-subtle: #2D3A45;
-    --text-primary: #C3D4DE;
-    --text-secondary: #7E97A7;
-    --text-tertiary: #7E97A7;
-    --accent-primary: #00ED64;
-    --accent-primary-subtle: #023430;
-    --success: #00ED64;
-    --danger: #FF5C5C;
-    --warning: #FFC010;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 142.4 71.8% 29.2%;
+    --sidebar: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
   }
+}
 
+@layer base {
   * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    @apply border-border;
   }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
 
-  html, body, #app {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg-app);
-    color: var(--text-primary);
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #2D3A45;
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #465A6B;
-  }
-
-  ::selection {
-    background: rgba(0, 237, 100, 0.2);
-  }
+::selection {
+  background: rgba(0, 237, 100, 0.2);
 }
