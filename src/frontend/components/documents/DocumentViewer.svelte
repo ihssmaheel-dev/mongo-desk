@@ -292,35 +292,6 @@
                 <button class="opacity-0 group-hover:opacity-100 {filters[col] ? 'opacity-100 !text-[#00ED64]' : 'text-[#465A6B]'} hover:text-[#C3D4DE] transition-all" onclick={() => openFilter(col)}>
                   <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                 </button>
-                {#if activeFilterCol === col}
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="fixed inset-0 z-30" onclick={() => activeFilterCol = ''}></div>
-                  <div class="absolute top-full left-0 z-40 mt-1 w-64 rounded-lg border border-[#2D3A45] bg-[#1F2933] shadow-2xl p-3" onclick={(e) => e.stopPropagation()}>
-                    <div class="mb-2 flex items-center justify-between">
-                      <span class="text-[10px] font-medium text-[#7E97A7]">{col}</span>
-                      <span class="text-[9px] text-[#465A6B]">{getFieldType(col)}</span>
-                    </div>
-                    <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 text-[11px] text-[#C3D4DE] outline-none" bind:value={filterOp}>
-                      {#each getFilterOps(getFieldType(col)) as op}<option value={op.value}>{op.label}</option>{/each}
-                    </select>
-                    {#if getFieldType(col) === 'number'}
-                      <input type="number" step="any" bind:value={filterValue} placeholder="Number..." class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 font-mono text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64]" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-                    {:else if getFieldType(col) === 'date'}
-                      <input type="datetime-local" bind:value={filterValue} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 font-mono text-[11px] text-[#C3D4DE] outline-none focus:border-[#00ED64]" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-                    {:else if getFieldType(col) === 'boolean'}
-                      <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 text-[11px] text-[#C3D4DE] outline-none" bind:value={filterValue}>
-                        <option value="true">true</option>
-                        <option value="false">false</option>
-                      </select>
-                    {:else}
-                      <input type="text" bind:value={filterValue} placeholder={getFieldType(col) === 'objectId' ? 'Paste ObjectId...' : 'Value...'} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 font-mono text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64]" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-                    {/if}
-                    <div class="flex gap-1.5">
-                      <button class="flex-1 rounded bg-[#00684A] px-2 py-1.5 text-[11px] font-medium text-white hover:bg-[#00C75A] transition-colors" onclick={applyFilter}>Apply</button>
-                      {#if filters[col]}<button class="rounded px-2 py-1.5 text-[11px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10 transition-colors" onclick={() => clearFilter(col)}>Clear</button>{/if}
-                    </div>
-                  </div>
-                {/if}
               </div>
             </th>
           {/each}
@@ -362,6 +333,65 @@
 </div>
 
 <ConfirmDialog bind:open={showDeleteConfirm} title="Delete Document" message="Are you sure you want to delete this document?" confirmText="Delete" variant="danger" onConfirm={handleDelete} />
+
+{#if activeFilterCol}
+  <div class="fixed inset-0 z-50 flex items-end justify-center pb-20" role="dialog">
+    <button class="fixed inset-0 bg-black/40" onclick={() => activeFilterCol = ''}></button>
+    <div class="relative w-full max-w-sm rounded-xl border border-[#2D3A45] bg-[#1F2933] shadow-2xl p-4" onclick={(e) => e.stopPropagation()}>
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <div class="text-[13px] font-semibold text-[#C3D4DE]">{activeFilterCol}</div>
+          <div class="text-[10px] text-[#465A6B]">{getFieldType(activeFilterCol)} field</div>
+        </div>
+        <button class="rounded p-1 text-[#465A6B] hover:bg-[#2D3A45] hover:text-[#C3D4DE] transition-colors" onclick={() => activeFilterCol = ''}>
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="mb-3">
+        <label class="mb-1 block text-[10px] text-[#7E97A7]">Operator</label>
+        <select class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 text-[12px] text-[#C3D4DE] outline-none focus:border-[#00ED64] transition-colors" bind:value={filterOp}>
+          {#each getFilterOps(getFieldType(activeFilterCol)) as op}
+            <option value={op.value}>{op.label}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="mb-1 block text-[10px] text-[#7E97A7]">Value</label>
+        {#if getFieldType(activeFilterCol) === 'number'}
+          <input type="number" step="any" bind:value={filterValue} placeholder="Enter number..."
+            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64] transition-colors"
+            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+        {:else if getFieldType(activeFilterCol) === 'date'}
+          <input type="datetime-local" bind:value={filterValue}
+            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] outline-none focus:border-[#00ED64] transition-colors"
+            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+        {:else if getFieldType(activeFilterCol) === 'boolean'}
+          <select class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 text-[12px] text-[#C3D4DE] outline-none focus:border-[#00ED64] transition-colors" bind:value={filterValue}>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        {:else if getFieldType(activeFilterCol) === 'objectId'}
+          <input type="text" bind:value={filterValue} placeholder="Paste ObjectId..."
+            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64] transition-colors"
+            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+        {:else}
+          <input type="text" bind:value={filterValue} placeholder="Enter value..."
+            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64] transition-colors"
+            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+        {/if}
+      </div>
+
+      <div class="flex gap-2">
+        {#if filters[activeFilterCol]}
+          <button class="rounded-lg border border-[#2D3A45] px-4 py-2 text-[12px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10 transition-colors" onclick={() => clearFilter(activeFilterCol)}>Clear Filter</button>
+        {/if}
+        <button class="flex-1 rounded-lg bg-[#00684A] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#00C75A] transition-colors" onclick={applyFilter}>Apply Filter</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if showInsertDialog}
   <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
