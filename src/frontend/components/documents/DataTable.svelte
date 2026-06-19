@@ -3,9 +3,6 @@
     createTable,
     getCoreRowModel,
     getSortedRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    flexRender,
     type SortingState,
     type ColumnDef,
   } from '@tanstack/table-core';
@@ -24,9 +21,9 @@
 
   let sorting = $state<SortingState>([]);
 
-  const tableColumns: ColumnDef<any>[] = columns.map(col => ({
+  const tableColumns: ColumnDef<any, any>[] = columns.map(col => ({
     accessorKey: col,
-    header: col === '_id' ? '_id' : col,
+    header: () => col === '_id' ? '_id' : col,
     cell: (info: any) => {
       const val = info.getValue();
       if (val === null || val === undefined) return 'null';
@@ -40,24 +37,24 @@
     },
   }));
 
-  const table = $derived(
-    createTable({
-      data,
-      columns: tableColumns,
-      state: { sorting },
-      onSortingChange: (updater: any) => {
-        const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
-        sorting = newSorting;
-        if (newSorting.length > 0) {
-          onSort?.(newSorting[0].id, newSorting[0].desc ? 'desc' : 'asc');
-        } else {
-          onSort?.('', null);
-        }
-      },
-      getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-    })
-  );
+  const table = createTable({
+    get data() { return data; },
+    columns: tableColumns,
+    state: {
+      get sorting() { return sorting; },
+    },
+    onSortingChange: (updater: any) => {
+      const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+      sorting = newSorting;
+      if (newSorting.length > 0) {
+        onSort?.(newSorting[0].id, newSorting[0].desc ? 'desc' : 'asc');
+      } else {
+        onSort?.('', null);
+      }
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   function getValueClass(val: any): string {
     if (val === null || val === undefined) return 'text-[#7E97A7] italic';
@@ -90,7 +87,7 @@
           {#each headerGroup.headers as header}
             <th class="border-b border-r border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap last:border-r-0 cursor-pointer hover:text-[#C3D4DE] transition-colors">
               <button class="flex items-center justify-between w-full gap-2" onclick={header.column.getToggleSortingHandler()}>
-                <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                <span>{header.column.columnDef.header}</span>
                 {#if header.column.getIsSorted() === 'asc'}
                   <span class="text-[#00ED64] text-[9px]">↑</span>
                 {:else if header.column.getIsSorted() === 'desc'}
@@ -106,8 +103,9 @@
       {#each table.getRowModel().rows as row, idx}
         <tr class="cursor-pointer border-b border-[#1F2933] hover:bg-[#161D24] transition-colors" onclick={() => onRowClick?.(row.original, idx)}>
           {#each row.getVisibleCells() as cell}
-            <td class="border-b border-r border-[#1F2933] px-3 py-1.5 text-[11px] {getValueClass(cell.getValue())} last:border-r-0">
-              <span class="max-w-[200px] truncate block">{formatValue(cell.getValue())}</span>
+            {@const val = cell.getValue()}
+            <td class="border-b border-r border-[#1F2933] px-3 py-1.5 text-[11px] {getValueClass(val)} last:border-r-0">
+              <span class="max-w-[200px] truncate block">{formatValue(val)}</span>
             </td>
           {/each}
         </tr>
