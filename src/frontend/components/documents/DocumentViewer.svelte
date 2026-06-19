@@ -70,6 +70,9 @@
         { value: 'gte', label: '≥ After or equal' }, { value: 'lt', label: '< Before' },
         { value: 'lte', label: '≤ Before or equal' },
       ];
+      case 'objectId': return [
+        { value: 'eq', label: '= Equals' },
+      ];
       default: return [
         { value: 'eq', label: '= Equals' }, { value: 'ne', label: '≠ Not equals' },
         { value: 'contains', label: 'Contains' }, { value: 'regex', label: 'Regex' },
@@ -81,7 +84,17 @@
     const obj: any = {};
     for (const [col, f] of Object.entries(filters)) {
       if (!f.value) continue;
-      const val = detectType(f.value);
+      const fieldType = getFieldType(col);
+      let val: any;
+      if (fieldType === 'objectId') {
+        val = { $oid: f.value };
+      } else if (fieldType === 'number') {
+        val = detectType(f.value);
+      } else if (fieldType === 'date') {
+        val = { $date: f.value };
+      } else {
+        val = detectType(f.value);
+      }
       switch (f.op) {
         case 'eq': obj[col] = val; break;
         case 'ne': obj[col] = { $ne: val }; break;
@@ -280,28 +293,31 @@
                   <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                 </button>
                 {#if activeFilterCol === col}
-                  {@const ft = getFieldType(col)}
-                  {@const ops = getFilterOps(ft)}
-                  <div class="absolute top-full left-0 z-20 mt-1 w-60 rounded-lg border border-[#2D3A45] bg-[#1F2933] shadow-xl p-2" role="dialog">
-                    <div class="mb-2 text-[10px] text-[#465A6B]">{ft} filter</div>
-                    <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] outline-none" bind:value={filterOp}>
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div class="fixed inset-0 z-30" onclick={() => activeFilterCol = ''}></div>
+                  <div class="absolute top-full left-0 z-40 mt-1 w-64 rounded-lg border border-[#2D3A45] bg-[#1F2933] shadow-2xl p-3" onclick={(e) => e.stopPropagation()}>
+                    <div class="mb-2 flex items-center justify-between">
+                      <span class="text-[10px] font-medium text-[#7E97A7]">{col}</span>
+                      <span class="text-[9px] text-[#465A6B]">{ft}</span>
+                    </div>
+                    <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 text-[11px] text-[#C3D4DE] outline-none" bind:value={filterOp}>
                       {#each ops as op}<option value={op.value}>{op.label}</option>{/each}
                     </select>
                     {#if ft === 'number'}
-                      <input type="number" step="any" bind:value={filterValue} placeholder="Enter number..." class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 font-mono text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+                      <input type="number" step="any" bind:value={filterValue} placeholder="Number..." class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 font-mono text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64]" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
                     {:else if ft === 'date'}
-                      <input type="datetime-local" bind:value={filterValue} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 font-mono text-[11px] text-[#C3D4DE] outline-none" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+                      <input type="datetime-local" bind:value={filterValue} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 font-mono text-[11px] text-[#C3D4DE] outline-none focus:border-[#00ED64]" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
                     {:else if ft === 'boolean'}
-                      <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] outline-none" bind:value={filterValue}>
+                      <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 text-[11px] text-[#C3D4DE] outline-none" bind:value={filterValue}>
                         <option value="true">true</option>
                         <option value="false">false</option>
                       </select>
                     {:else}
-                      <input type="text" bind:value={filterValue} placeholder="Enter value..." class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
+                      <input type="text" bind:value={filterValue} placeholder={ft === 'objectId' ? 'Paste ObjectId...' : 'Value...'} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1.5 font-mono text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64]" onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
                     {/if}
-                    <div class="flex gap-1">
-                      <button class="flex-1 rounded bg-[#00684A] px-2 py-1 text-[10px] text-white hover:bg-[#00C75A]" onclick={applyFilter}>Apply</button>
-                      {#if filters[col]}<button class="rounded px-2 py-1 text-[10px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10" onclick={() => clearFilter(col)}>Clear</button>{/if}
+                    <div class="flex gap-1.5">
+                      <button class="flex-1 rounded bg-[#00684A] px-2 py-1.5 text-[11px] font-medium text-white hover:bg-[#00C75A] transition-colors" onclick={applyFilter}>Apply</button>
+                      {#if filters[col]}<button class="rounded px-2 py-1.5 text-[11px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10 transition-colors" onclick={() => clearFilter(col)}>Clear</button>{/if}
                     </div>
                   </div>
                 {/if}
