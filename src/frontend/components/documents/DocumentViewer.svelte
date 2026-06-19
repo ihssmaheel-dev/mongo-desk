@@ -156,20 +156,22 @@
   let showFullPreview = $state(false);
 
   function highlightJson(obj: any, indent: number = 0): string {
-    if (obj === null || obj === undefined) return '<span class="text-[#7E97A7]">null</span>';
-    if (typeof obj === 'boolean') return `<span class="text-[#FF8966]">${obj}</span>`;
-    if (typeof obj === 'number') return `<span class="text-[#5DD0FF]">${obj}</span>`;
-    if (typeof obj === 'string') return `<span class="text-[#00ED64]">"${obj}"</span>`;
+    if (obj === null || obj === undefined) return '<span style="color:#7E97A7">null</span>';
+    if (typeof obj === 'boolean') return `<span style="color:#FF8966">${obj}</span>`;
+    if (typeof obj === 'number') return `<span style="color:#5DD0FF">${obj}</span>`;
+    if (typeof obj === 'string') return `<span style="color:#00ED64">"${obj}"</span>`;
     if (Array.isArray(obj)) {
-      if (obj.length === 0) return '[]';
-      const items = obj.map(item => '  '.repeat(indent + 1) + highlightJson(item, indent + 1)).join(',\n');
-      return `[\n${items}\n${'  '.repeat(indent)}]`;
+      if (obj.length === 0) return '<span style="color:#C3D4DE">[]</span>';
+      const pad = '  '.repeat(indent + 1);
+      const items = obj.map(item => pad + highlightJson(item, indent + 1)).join(',\n');
+      return `<span style="color:#C3D4DE">[</span>\n${items}\n${'  '.repeat(indent)}<span style="color:#C3D4DE">]</span>`;
     }
     if (typeof obj === 'object') {
       const keys = Object.keys(obj);
-      if (keys.length === 0) return '{}';
-      const entries = keys.map(k => `${'  '.repeat(indent + 1)}<span class="text-[#5DD0FF]">"${k}"</span>: ${highlightJson(obj[k], indent + 1)}`).join(',\n');
-      return `{\n${entries}\n${'  '.repeat(indent)}}`;
+      if (keys.length === 0) return '<span style="color:#C3D4DE">{}</span>';
+      const pad = '  '.repeat(indent + 1);
+      const entries = keys.map(k => `${pad}<span style="color:#5DD0FF">"${k}"</span><span style="color:#C3D4DE">: </span>${highlightJson(obj[k], indent + 1)}`).join(',\n');
+      return `<span style="color:#C3D4DE">{</span>\n${entries}\n${'  '.repeat(indent)}<span style="color:#C3D4DE">}</span>`;
     }
     return String(obj);
   }
@@ -316,8 +318,8 @@
   </div>
 
   {#if selectedDoc && viewMode === 'table' && !showFullPreview}
-    <div class="border-t border-[#2D3A45] bg-[#161D24] max-h-[250px] overflow-auto">
-      <div class="flex items-center justify-between px-4 py-1.5 border-b border-[#2D3A45]">
+    <div class="flex flex-col border-t border-[#2D3A45] bg-[#161D24] h-[250px]">
+      <div class="flex items-center justify-between px-4 py-1.5 border-b border-[#2D3A45] flex-shrink-0">
         <span class="text-[10px] font-semibold uppercase tracking-wider text-[#7E97A7]">Document Preview</span>
         <div class="flex items-center gap-1">
           <button class="rounded px-2 py-0.5 text-[10px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => showFullPreview = true}>Full Preview</button>
@@ -327,7 +329,9 @@
           </button>
         </div>
       </div>
-      <pre class="p-3 text-[11px] font-mono leading-relaxed whitespace-pre-wrap">{@html highlightJson(selectedDoc)}</pre>
+      <div class="flex-1 overflow-auto p-3">
+        <pre class="text-[11px] font-mono leading-relaxed whitespace-pre-wrap">{@html highlightJson(selectedDoc)}</pre>
+      </div>
     </div>
   {/if}
 </div>
