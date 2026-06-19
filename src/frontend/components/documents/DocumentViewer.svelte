@@ -322,7 +322,7 @@
   {/if}
 </div>
 
-<FilterDialog bind:open={filterDialogOpen} column={filterDialogCol} fieldType={getFieldType(filterDialogCol)} currentOp={filterDialogOp} currentValue={filterDialogValue} hasFilter={!!filters[filterDialogCol]} onApply={applyFilter} onClear={() => clearFilter(filterDialogCol)} />
+<FilterDialog bind:open={filterDialogOpen} column={filterDialogCol} {documents} currentOp={filterDialogOp} currentValue={filterDialogValue} hasFilter={!!filters[filterDialogCol]} onApply={applyFilter} onClear={() => clearFilter(filterDialogCol)} />
 
 <ConfirmDialog bind:open={showDeleteConfirm} title="Delete Document" message="Are you sure you want to delete this document?" confirmText="Delete" variant="danger" onConfirm={handleDelete} />
 
