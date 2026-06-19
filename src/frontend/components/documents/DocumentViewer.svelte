@@ -153,6 +153,27 @@
     }
   }
 
+  let showFullPreview = $state(false);
+
+  function highlightJson(obj: any, indent: number = 0): string {
+    if (obj === null || obj === undefined) return '<span class="text-[#7E97A7]">null</span>';
+    if (typeof obj === 'boolean') return `<span class="text-[#FF8966]">${obj}</span>`;
+    if (typeof obj === 'number') return `<span class="text-[#5DD0FF]">${obj}</span>`;
+    if (typeof obj === 'string') return `<span class="text-[#00ED64]">"${obj}"</span>`;
+    if (Array.isArray(obj)) {
+      if (obj.length === 0) return '[]';
+      const items = obj.map(item => '  '.repeat(indent + 1) + highlightJson(item, indent + 1)).join(',\n');
+      return `[\n${items}\n${'  '.repeat(indent)}]`;
+    }
+    if (typeof obj === 'object') {
+      const keys = Object.keys(obj);
+      if (keys.length === 0) return '{}';
+      const entries = keys.map(k => `${'  '.repeat(indent + 1)}<span class="text-[#5DD0FF]">"${k}"</span>: ${highlightJson(obj[k], indent + 1)}`).join(',\n');
+      return `{\n${entries}\n${'  '.repeat(indent)}}`;
+    }
+    return String(obj);
+  }
+
   function goNext() {
     if (documents.length >= pageSize) loadDocs(page + 1, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
   }
@@ -161,6 +182,24 @@
     if (page > 0) loadDocs(page - 1, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
   }
 </script>
+
+{#if showFullPreview && selectedDoc}
+  <div class="fixed inset-0 z-50 flex flex-col bg-[#0E1318]">
+    <div class="flex items-center justify-between border-b border-[#2D3A45] px-4 py-2 bg-[#161D24]">
+      <span class="text-[13px] font-semibold text-[#C3D4DE]">Document Preview</span>
+      <div class="flex items-center gap-2">
+        <button class="rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => navigator.clipboard.writeText(JSON.stringify(selectedDoc, null, 2))}>Copy JSON</button>
+        <button class="rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => { editJson = JSON.stringify(selectedDoc, null, 2); showEditDialog = true; showFullPreview = false; }}>Edit</button>
+        <button class="rounded p-1 text-[#465A6B] hover:bg-[#2D3A45] hover:text-[#C3D4DE]" onclick={() => showFullPreview = false}>
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-auto p-4">
+      <pre class="text-[12px] font-mono leading-relaxed whitespace-pre-wrap">{@html highlightJson(selectedDoc)}</pre>
+    </div>
+  </div>
+{/if}
 
 <div class="flex h-full flex-col bg-[#0E1318]">
   <div class="flex items-center justify-between border-b border-[#2D3A45] px-4 py-2 bg-[#161D24]">
@@ -276,13 +315,19 @@
     </div>
   </div>
 
-  {#if selectedDoc && viewMode === 'table'}
-    <div class="border-t border-[#2D3A45] bg-[#161D24] max-h-[200px] overflow-auto">
+  {#if selectedDoc && viewMode === 'table' && !showFullPreview}
+    <div class="border-t border-[#2D3A45] bg-[#161D24] max-h-[250px] overflow-auto">
       <div class="flex items-center justify-between px-4 py-1.5 border-b border-[#2D3A45]">
         <span class="text-[10px] font-semibold uppercase tracking-wider text-[#7E97A7]">Document Preview</span>
-        <button class="rounded px-2 py-0.5 text-[10px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => navigator.clipboard.writeText(JSON.stringify(selectedDoc, null, 2))}>Copy JSON</button>
+        <div class="flex items-center gap-1">
+          <button class="rounded px-2 py-0.5 text-[10px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => showFullPreview = true}>Full Preview</button>
+          <button class="rounded px-2 py-0.5 text-[10px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => navigator.clipboard.writeText(JSON.stringify(selectedDoc, null, 2))}>Copy JSON</button>
+          <button class="rounded p-0.5 text-[#465A6B] hover:bg-[#2D3A45] hover:text-[#C3D4DE]" onclick={() => { selectedDoc = null; selectedIdx = -1; }}>
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
       </div>
-      <pre class="p-3 text-[11px] font-mono text-[#C3D4DE] whitespace-pre-wrap leading-relaxed">{JSON.stringify(selectedDoc, null, 2)}</pre>
+      <pre class="p-3 text-[11px] font-mono leading-relaxed whitespace-pre-wrap">{@html highlightJson(selectedDoc)}</pre>
     </div>
   {/if}
 </div>
