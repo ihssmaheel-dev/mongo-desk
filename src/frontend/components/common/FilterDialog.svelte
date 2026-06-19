@@ -96,11 +96,11 @@
         return [
           { value: 'contains', label: 'Contains', description: 'Array contains value', inputType: 'text' },
           { value: 'notContains', label: 'Does not contain', description: 'Array missing value', inputType: 'text' },
-          { value: 'sizeEquals', label: 'Size equals', description: 'Array length = N', inputType: 'number' },
-          { value: 'sizeGt', label: 'Size greater than', description: 'Array length > N', inputType: 'number' },
-          { value: 'sizeLt', label: 'Size less than', description: 'Array length < N', inputType: 'number' },
-          { value: 'empty', label: 'Is empty', description: 'Array has no elements', inputType: 'boolean' },
-          { value: 'notEmpty', label: 'Not empty', description: 'Array has elements', inputType: 'boolean' },
+          { value: 'sizeEquals', label: 'Size equals', description: 'Array has N elements', inputType: 'number' },
+          { value: 'sizeGt', label: 'More than N elements', description: 'Array length > N', inputType: 'number' },
+          { value: 'sizeLt', label: 'Fewer than N elements', description: 'Array length < N', inputType: 'number' },
+          { value: 'empty', label: 'Is empty array', description: 'Array has no elements', inputType: 'boolean' },
+          { value: 'notEmpty', label: 'Is not empty', description: 'Array has at least one element', inputType: 'boolean' },
         ];
       case 'object':
         return [

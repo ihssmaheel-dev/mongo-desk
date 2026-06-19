@@ -64,14 +64,26 @@
       if (!f.value && !['isTrue','isFalse','exists','notExists','today','thisWeek','thisMonth','empty','notEmpty','isEmpty','notHasKey'].includes(f.op)) continue;
       const ft = getFieldType(col);
       switch (f.op) {
-        case 'eq': obj[col] = ft === 'objectId' ? { $oid: f.value } : ft === 'date' ? { $date: f.value } : detectType(f.value); break;
-        case 'ne': obj[col] = { $ne: ft === 'objectId' ? { $oid: f.value } : detectType(f.value) }; break;
+        case 'eq':
+          if (ft === 'objectId') obj[col] = { $oid: f.value };
+          else if (ft === 'date') obj[col] = { $date: f.value };
+          else if (ft === 'array') obj[col] = f.value;
+          else obj[col] = detectType(f.value);
+          break;
+        case 'ne':
+          if (ft === 'objectId') obj[col] = { $ne: { $oid: f.value } };
+          else if (ft === 'date') obj[col] = { $ne: { $date: f.value } };
+          else obj[col] = { $ne: detectType(f.value) };
+          break;
         case 'gt': obj[col] = { $gt: detectType(f.value) }; break;
         case 'gte': obj[col] = { $gte: detectType(f.value) }; break;
         case 'lt': obj[col] = { $lt: detectType(f.value) }; break;
         case 'lte': obj[col] = { $lte: detectType(f.value) }; break;
         case 'between': { const [a, b] = f.value.split(',').map(s => detectType(s.trim())); obj[col] = { $gte: a, $lte: b }; break; }
-        case 'contains': obj[col] = { $regex: f.value, $options: 'i' }; break;
+        case 'contains':
+          if (ft === 'array') obj[col] = f.value;
+          else obj[col] = { $regex: f.value, $options: 'i' };
+          break;
         case 'startsWith': obj[col] = { $regex: `^${f.value}`, $options: 'i' }; break;
         case 'endsWith': obj[col] = { $regex: `${f.value}$`, $options: 'i' }; break;
         case 'regex': obj[col] = { $regex: f.value }; break;
@@ -82,12 +94,15 @@
         case 'today': { const d = new Date(); d.setHours(0,0,0,0); const d2 = new Date(); d2.setHours(23,59,59,999); obj[col] = { $gte: { $date: d.toISOString() }, $lte: { $date: d2.toISOString() } }; break; }
         case 'thisWeek': { const now = new Date(); const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0,0,0,0); const end = new Date(start); end.setDate(start.getDate() + 7); obj[col] = { $gte: { $date: start.toISOString() }, $lt: { $date: end.toISOString() } }; break; }
         case 'thisMonth': { const now = new Date(); const start = new Date(now.getFullYear(), now.getMonth(), 1); const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); obj[col] = { $gte: { $date: start.toISOString() }, $lte: { $date: end.toISOString() } }; break; }
-        case 'notContains': obj[col] = { $not: { $regex: f.value, $options: 'i' } }; break;
+        case 'notContains':
+          if (ft === 'array') obj[col] = { $not: { $elemMatch: { $eq: f.value } } };
+          else obj[col] = { $not: { $regex: f.value, $options: 'i' } };
+          break;
         case 'sizeEquals': obj[col] = { $size: parseInt(f.value) }; break;
-        case 'sizeGt': obj[col] = { $gt: { $size: parseInt(f.value) } }; break;
-        case 'sizeLt': obj[col] = { $lt: { $size: parseInt(f.value) } }; break;
+        case 'sizeGt': obj[col] = { $exists: true, $not: { $size: { $lte: parseInt(f.value) } } }; break;
+        case 'sizeLt': obj[col] = { $exists: true, $not: { $size: { $gte: parseInt(f.value) } } }; break;
         case 'empty': obj[col] = { $size: 0 }; break;
-        case 'notEmpty': obj[col] = { $not: { $size: 0 } }; break;
+        case 'notEmpty': obj[col] = { $exists: true, $not: { $size: 0 } }; break;
         case 'hasKey': obj[`${col}.${f.value}`] = { $exists: true }; break;
         case 'notHasKey': obj[`${col}.${f.value}`] = { $exists: false }; break;
         case 'isEmpty': obj[col] = { $eq: {} }; break;
