@@ -1,6 +1,7 @@
 <script lang="ts">
   import { documentStore } from '../../stores/documentStore';
   import ConfirmDialog from '../common/ConfirmDialog.svelte';
+  import FilterDialog from '../common/FilterDialog.svelte';
   import DataTable from './DataTable.svelte';
 
   let { connectionId, database, collection, onSelect }: {
@@ -27,23 +28,15 @@
   let editJson = $state('');
   let showFullPreview = $state(false);
   let filters = $state<Record<string, { op: string; value: string }>>({});
-  let activeFilterCol = $state('');
-  let filterOp = $state('eq');
-  let filterValue = $state('');
+  let filterDialogOpen = $state(false);
+  let filterDialogCol = $state('');
+  let filterDialogOp = $state('eq');
+  let filterDialogValue = $state('');
+  let lastLoadKey = '';
   let queryId = $state(0);
 
   const pageSize = 50;
   const totalPages = $derived(Math.ceil(totalCount / pageSize));
-
-  function detectType(val: string): any {
-    if (val === 'null') return null;
-    if (val === 'true') return true;
-    if (val === 'false') return false;
-    if (/^-?\d+$/.test(val)) return parseInt(val);
-    if (/^-?\d+\.\d+$/.test(val)) return parseFloat(val);
-    if (/^\d{4}-\d{2}-\d{2}/.test(val)) return { $date: val };
-    return val;
-  }
 
   function getFieldType(col: string): string {
     if (documents.length === 0) return 'string';
@@ -60,55 +53,52 @@
     return 'string';
   }
 
-  function getFilterOps(fieldType: string): { value: string; label: string }[] {
-    switch (fieldType) {
-      case 'number': return [
-        { value: 'eq', label: '= Equals' }, { value: 'ne', label: '≠ Not equals' },
-        { value: 'gt', label: '> Greater than' }, { value: 'gte', label: '≥ Greater or equal' },
-        { value: 'lt', label: '< Less than' }, { value: 'lte', label: '≤ Less or equal' },
-      ];
-      case 'date': return [
-        { value: 'eq', label: '= Equals' }, { value: 'gt', label: '> After' },
-        { value: 'gte', label: '≥ After or equal' }, { value: 'lt', label: '< Before' },
-        { value: 'lte', label: '≤ Before or equal' },
-      ];
-      case 'objectId': return [
-        { value: 'eq', label: '= Equals' },
-      ];
-      default: return [
-        { value: 'eq', label: '= Equals' }, { value: 'ne', label: '≠ Not equals' },
-        { value: 'contains', label: 'Contains' }, { value: 'regex', label: 'Regex' },
-      ];
-    }
-  }
-
   function buildFilterQuery(): string | undefined {
     const obj: any = {};
     for (const [col, f] of Object.entries(filters)) {
-      if (!f.value) continue;
-      const fieldType = getFieldType(col);
-      let val: any;
-      if (fieldType === 'objectId') {
-        val = { $oid: f.value };
-      } else if (fieldType === 'number') {
-        val = detectType(f.value);
-      } else if (fieldType === 'date') {
-        val = { $date: f.value };
-      } else {
-        val = detectType(f.value);
-      }
+      if (!f.value && !['isTrue','isFalse','exists','notExists','today','thisWeek','thisMonth','empty','notEmpty','isEmpty','notHasKey'].includes(f.op)) continue;
+      const ft = getFieldType(col);
       switch (f.op) {
-        case 'eq': obj[col] = val; break;
-        case 'ne': obj[col] = { $ne: val }; break;
-        case 'gt': obj[col] = { $gt: val }; break;
-        case 'gte': obj[col] = { $gte: val }; break;
-        case 'lt': obj[col] = { $lt: val }; break;
-        case 'lte': obj[col] = { $lte: val }; break;
+        case 'eq': obj[col] = ft === 'objectId' ? { $oid: f.value } : ft === 'date' ? { $date: f.value } : detectType(f.value); break;
+        case 'ne': obj[col] = { $ne: ft === 'objectId' ? { $oid: f.value } : detectType(f.value) }; break;
+        case 'gt': obj[col] = { $gt: detectType(f.value) }; break;
+        case 'gte': obj[col] = { $gte: detectType(f.value) }; break;
+        case 'lt': obj[col] = { $lt: detectType(f.value) }; break;
+        case 'lte': obj[col] = { $lte: detectType(f.value) }; break;
+        case 'between': { const [a, b] = f.value.split(',').map(s => detectType(s.trim())); obj[col] = { $gte: a, $lte: b }; break; }
         case 'contains': obj[col] = { $regex: f.value, $options: 'i' }; break;
+        case 'startsWith': obj[col] = { $regex: `^${f.value}`, $options: 'i' }; break;
+        case 'endsWith': obj[col] = { $regex: `${f.value}$`, $options: 'i' }; break;
         case 'regex': obj[col] = { $regex: f.value }; break;
+        case 'isTrue': obj[col] = true; break;
+        case 'isFalse': obj[col] = false; break;
+        case 'exists': obj[col] = { $exists: true }; break;
+        case 'notExists': obj[col] = { $exists: false }; break;
+        case 'today': { const d = new Date(); d.setHours(0,0,0,0); const d2 = new Date(); d2.setHours(23,59,59,999); obj[col] = { $gte: { $date: d.toISOString() }, $lte: { $date: d2.toISOString() } }; break; }
+        case 'thisWeek': { const now = new Date(); const start = new Date(now); start.setDate(now.getDate() - now.getDay()); start.setHours(0,0,0,0); const end = new Date(start); end.setDate(start.getDate() + 7); obj[col] = { $gte: { $date: start.toISOString() }, $lt: { $date: end.toISOString() } }; break; }
+        case 'thisMonth': { const now = new Date(); const start = new Date(now.getFullYear(), now.getMonth(), 1); const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); obj[col] = { $gte: { $date: start.toISOString() }, $lte: { $date: end.toISOString() } }; break; }
+        case 'notContains': obj[col] = { $not: { $regex: f.value, $options: 'i' } }; break;
+        case 'sizeEquals': obj[col] = { $size: parseInt(f.value) }; break;
+        case 'sizeGt': obj[col] = { $gt: { $size: parseInt(f.value) } }; break;
+        case 'sizeLt': obj[col] = { $lt: { $size: parseInt(f.value) } }; break;
+        case 'empty': obj[col] = { $size: 0 }; break;
+        case 'notEmpty': obj[col] = { $not: { $size: 0 } }; break;
+        case 'hasKey': obj[`${col}.${f.value}`] = { $exists: true }; break;
+        case 'notHasKey': obj[`${col}.${f.value}`] = { $exists: false }; break;
+        case 'isEmpty': obj[col] = { $eq: {} }; break;
       }
     }
     return Object.keys(obj).length > 0 ? JSON.stringify(obj) : undefined;
+  }
+
+  function detectType(val: string): any {
+    if (val === 'null') return null;
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    if (/^-?\d+$/.test(val)) return parseInt(val);
+    if (/^-?\d+\.\d+$/.test(val)) return parseFloat(val);
+    if (/^\d{4}-\d{2}-\d{2}/.test(val)) return { $date: val };
+    return val;
   }
 
   function buildSortQuery(): string | undefined {
@@ -131,56 +121,47 @@
         documents.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
         columns = Array.from(allKeys);
       }
-    } catch (e) {
-      console.error('Query failed:', e);
-    }
+    } catch (e) { console.error('Query failed:', e); }
     if (thisQuery === queryId) loading = false;
   }
-
-  let lastLoadKey = '';
 
   $effect(() => {
     const key = `${connectionId}-${database}-${collection}`;
     if (key !== lastLoadKey && connectionId && database && collection) {
       lastLoadKey = key;
-      page = 0;
-      filters = {};
-      sortField = '';
-      sortDir = 'asc';
+      page = 0; filters = {}; sortField = ''; sortDir = 'asc';
       executeQuery(0);
     }
     if (!connectionId || !database || !collection) {
-      documents = [];
-      columns = [];
-      totalCount = 0;
-      lastLoadKey = '';
+      documents = []; columns = []; totalCount = 0; lastLoadKey = '';
     }
   });
 
   function handleSort(field: string) {
-    if (sortField === field) {
-      if (sortDir === 'asc') sortDir = 'desc';
-      else { sortField = ''; sortDir = 'asc'; }
-    } else { sortField = field; sortDir = 'asc'; }
+    if (sortField === field) { if (sortDir === 'asc') sortDir = 'desc'; else { sortField = ''; sortDir = 'asc'; } }
+    else { sortField = field; sortDir = 'asc'; }
     executeQuery(0);
   }
 
   function openFilter(col: string) {
-    activeFilterCol = activeFilterCol === col ? '' : col;
-    if (filters[col]) { filterOp = filters[col].op; filterValue = filters[col].value; }
-    else { filterOp = 'eq'; filterValue = ''; }
+    filterDialogCol = col;
+    filterDialogOp = filters[col]?.op || 'eq';
+    filterDialogValue = filters[col]?.value || '';
+    filterDialogOpen = true;
   }
 
-  function applyFilter() {
-    if (!filterValue) { clearFilter(activeFilterCol); return; }
-    filters = { ...filters, [activeFilterCol]: { op: filterOp, value: filterValue } };
-    activeFilterCol = '';
+  function applyFilter(op: string, value: string) {
+    if (!value && !['isTrue','isFalse','exists','notExists','today','thisWeek','thisMonth','empty','notEmpty','isEmpty','notHasKey'].includes(op)) {
+      const n = { ...filters }; delete n[filterDialogCol]; filters = n;
+    } else {
+      filters = { ...filters, [filterDialogCol]: { op, value } };
+    }
     executeQuery(0);
   }
 
   function clearFilter(col: string) {
     const n = { ...filters }; delete n[col]; filters = n;
-    activeFilterCol = '';
+    filterDialogOpen = false;
     executeQuery(0);
   }
 
@@ -298,20 +279,12 @@
     </div>
   {:else if viewMode === 'table'}
     <div class="flex-1 overflow-hidden">
-      <DataTable
-        data={documents}
-        {columns}
-        {sortField}
-        {sortDir}
-        {filters}
+      <DataTable data={documents} {columns} {sortField} {sortDir} {filters}
         onRowClick={(doc, idx) => selectDoc(doc, idx)}
         onSort={(field, dir) => { sortField = field; sortDir = dir || 'asc'; executeQuery(0); }}
-        onFilter={(col) => openFilter(col)}
-      />
+        onFilter={(col) => openFilter(col)} />
       {#if documents.length === 0}
-        <div class="flex items-center justify-center py-8">
-          <span class="text-[12px] text-[#7E97A7]">{Object.keys(filters).length > 0 ? 'No results match your filters' : 'No documents in this collection'}</span>
-        </div>
+        <div class="flex items-center justify-center py-8"><span class="text-[12px] text-[#7E97A7]">{Object.keys(filters).length > 0 ? 'No results match your filters' : 'No documents in this collection'}</span></div>
       {/if}
     </div>
   {:else}
@@ -341,66 +314,9 @@
   {/if}
 </div>
 
+<FilterDialog bind:open={filterDialogOpen} column={filterDialogCol} fieldType={getFieldType(filterDialogCol)} currentOp={filterDialogOp} currentValue={filterDialogValue} hasFilter={!!filters[filterDialogCol]} onApply={applyFilter} onClear={() => clearFilter(filterDialogCol)} />
+
 <ConfirmDialog bind:open={showDeleteConfirm} title="Delete Document" message="Are you sure you want to delete this document?" confirmText="Delete" variant="danger" onConfirm={handleDelete} />
-
-{#if activeFilterCol}
-  <div class="fixed inset-0 z-50 flex items-start justify-center pt-16" role="dialog">
-    <button class="fixed inset-0 bg-black/40" onclick={() => activeFilterCol = ''}></button>
-    <div class="relative w-full max-w-sm rounded-xl border border-[#2D3A45] bg-[#1F2933] shadow-2xl p-4 mx-4" onclick={(e) => e.stopPropagation()}>
-      <div class="mb-3 flex items-center justify-between">
-        <div>
-          <div class="text-[13px] font-semibold text-[#C3D4DE]">{activeFilterCol}</div>
-          <div class="text-[10px] text-[#465A6B]">{getFieldType(activeFilterCol)} field</div>
-        </div>
-        <button class="rounded p-1 text-[#465A6B] hover:bg-[#2D3A45] hover:text-[#C3D4DE] transition-colors" onclick={() => activeFilterCol = ''}>
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="mb-3">
-        <label class="mb-1 block text-[10px] text-[#7E97A7]">Operator</label>
-        <select class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 text-[12px] text-[#C3D4DE] outline-none focus:border-[#00ED64] transition-colors" bind:value={filterOp}>
-          {#each getFilterOps(getFieldType(activeFilterCol)) as op}
-            <option value={op.value}>{op.label}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="mb-4">
-        <label class="mb-1 block text-[10px] text-[#7E97A7]">Value</label>
-        {#if getFieldType(activeFilterCol) === 'number'}
-          <input type="number" step="any" bind:value={filterValue} placeholder="Enter number..."
-            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64] transition-colors"
-            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-        {:else if getFieldType(activeFilterCol) === 'date'}
-          <input type="datetime-local" bind:value={filterValue}
-            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] outline-none focus:border-[#00ED64] transition-colors"
-            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-        {:else if getFieldType(activeFilterCol) === 'boolean'}
-          <select class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 text-[12px] text-[#C3D4DE] outline-none focus:border-[#00ED64] transition-colors" bind:value={filterValue}>
-            <option value="true">true</option>
-            <option value="false">false</option>
-          </select>
-        {:else if getFieldType(activeFilterCol) === 'objectId'}
-          <input type="text" bind:value={filterValue} placeholder="Paste ObjectId..."
-            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64] transition-colors"
-            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-        {:else}
-          <input type="text" bind:value={filterValue} placeholder="Enter value..."
-            class="w-full rounded border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-[12px] text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:border-[#00ED64] transition-colors"
-            onkeydown={(e) => { if (e.key === 'Enter') applyFilter(); }} />
-        {/if}
-      </div>
-
-      <div class="flex gap-2">
-        {#if filters[activeFilterCol]}
-          <button class="rounded-lg border border-[#2D3A45] px-4 py-2 text-[12px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10 transition-colors" onclick={() => clearFilter(activeFilterCol)}>Clear Filter</button>
-        {/if}
-        <button class="flex-1 rounded-lg bg-[#00684A] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#00C75A] transition-colors" onclick={applyFilter}>Apply Filter</button>
-      </div>
-    </div>
-  </div>
-{/if}
 
 {#if showInsertDialog}
   <div class="fixed inset-0 z-50 flex items-center justify-center" role="dialog">
