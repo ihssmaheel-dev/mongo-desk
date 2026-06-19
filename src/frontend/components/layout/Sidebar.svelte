@@ -3,6 +3,7 @@
   import { connectionStore } from '../../stores/connectionStore';
   import ConnectionTree from '../connection/ConnectionTree.svelte';
   import ConnectionDialog from '../connection/ConnectionDialog.svelte';
+  import ConfirmDialog from '../common/ConfirmDialog.svelte';
   import DatabaseTree from '../explorer/DatabaseTree.svelte';
   import type { Connection } from '../../types/connection';
 
@@ -12,6 +13,9 @@
   } = $props();
 
   let showAddDialog = $state(false);
+  let showDeleteConfirm = $state(false);
+  let deleteTargetId = $state('');
+  let deleteTargetName = $state('');
   let searchQuery = $state('');
   let connections = $state<Connection[]>([]);
   let loading = $state(false);
@@ -54,6 +58,27 @@
     activeDatabase = db;
     activeCollection = coll;
     onSelectCollection(db, coll);
+  }
+
+  function confirmDelete(id: string) {
+    const conn = connections.find(c => c.id === id);
+    if (conn) {
+      deleteTargetId = id;
+      deleteTargetName = conn.name;
+      showDeleteConfirm = true;
+    }
+  }
+
+  async function handleDelete() {
+    await connectionStore.deleteConnection(deleteTargetId);
+    if (activeConnectionId === deleteTargetId) {
+      activeConnectionId = '';
+      activeDatabase = '';
+      activeCollection = '';
+      onSelectConnection('');
+    }
+    showDeleteConfirm = false;
+    await refresh();
   }
 </script>
 
@@ -99,6 +124,7 @@
         connections={filteredConnections}
         {activeConnectionId}
         onSelect={handleSelectConnection}
+        onDelete={confirmDelete}
       />
 
       <DatabaseTree
@@ -124,3 +150,12 @@
 </aside>
 
 <ConnectionDialog bind:open={showAddDialog} onSave={handleAddConnection} />
+
+<ConfirmDialog
+  bind:open={showDeleteConfirm}
+  title="Delete Connection"
+  message="Are you sure you want to delete '{deleteTargetName}'? This action cannot be undone."
+  confirmText="Delete"
+  variant="danger"
+  onConfirm={handleDelete}
+/>
