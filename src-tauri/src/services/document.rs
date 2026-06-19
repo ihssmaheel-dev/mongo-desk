@@ -194,4 +194,35 @@ impl DocumentService {
             deleted_count: result.deleted_count,
         })
     }
+
+    pub async fn get_collection_fields(client: &Client, db_name: &str, coll_name: &str) -> Result<Vec<String>, AppError> {
+        let coll = Self::get_collection(client, db_name, coll_name);
+
+        let mut cursor = coll.find(mongodb::bson::doc! {})
+            .limit(100)
+            .await
+            .map_err(|e| AppError::Internal {
+                code: "ERR_INTERNAL".into(),
+                message: format!("Failed to sample documents: {}", e),
+            })?;
+
+        let mut all_keys = std::collections::HashSet::new();
+        all_keys.insert("_id".to_string());
+
+        while cursor.advance().await.map_err(|e| AppError::Internal {
+            code: "ERR_INTERNAL".into(),
+            message: format!("Failed to iterate: {}", e),
+        })? {
+            let raw = cursor.current();
+            if let Ok(doc) = bson::from_slice::<Document>(raw.as_bytes()) {
+                for key in doc.keys() {
+                    all_keys.insert(key.clone());
+                }
+            }
+        }
+
+        let mut fields: Vec<String> = all_keys.into_iter().collect();
+        fields.sort();
+        Ok(fields)
+    }
 }

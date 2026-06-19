@@ -43,6 +43,7 @@ pub fn run() {
             commands::document::insert_document,
             commands::document::update_document,
             commands::document::delete_document,
+            commands::document::get_collection_fields,
             commands::query::execute_query,
             commands::query::validate_query,
         ])

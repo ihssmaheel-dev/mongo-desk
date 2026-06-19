@@ -75,3 +75,18 @@ pub async fn delete_document(
         &params.id,
     ).await
 }
+
+#[tauri::command]
+pub async fn get_collection_fields(
+    state: State<'_, AppState>,
+    connection_id: String,
+    database: String,
+    collection: String,
+) -> Result<Vec<String>, AppError> {
+    let client = get_client(&state, &connection_id).await?;
+    crate::services::document::DocumentService::get_collection_fields(
+        &client,
+        &database,
+        &collection,
+    ).await
+}

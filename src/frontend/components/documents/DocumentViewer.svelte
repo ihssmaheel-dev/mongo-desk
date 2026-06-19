@@ -143,6 +143,17 @@
         for (const col of columns) {
           if (!fieldTypes[col]) getFieldType(col);
         }
+      } else if (columns.length === 0) {
+        try {
+          const { tauriInvoke } = await import('../../services/tauriBridge');
+          const { data } = await tauriInvoke<string[]>('get_collection_fields', { connectionId, database, collection });
+          if (data && data.length > 0) {
+            columns = data;
+            for (const col of columns) {
+              if (!fieldTypes[col]) fieldTypes[col] = 'string';
+            }
+          }
+        } catch {}
       }
     } catch (e) { console.error('Query failed:', e); }
     if (thisQuery === queryId) loading = false;
