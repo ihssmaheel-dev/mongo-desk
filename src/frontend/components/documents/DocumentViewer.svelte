@@ -116,15 +116,19 @@
 
   async function executeQuery(p?: number) {
     loading = true; columns = []; selectedDoc = null; selectedIdx = -1;
-    const pageNum = p !== undefined ? p : page;
-    await documentStore.loadDocuments(connectionId, database, collection, pageNum, buildFilterQuery(), buildSortQuery());
-    documents = [...documentStore.documents];
-    totalCount = documentStore.totalCount;
-    page = documentStore.page;
-    if (documents.length > 0) {
-      const allKeys = new Set<string>(); allKeys.add('_id');
-      documents.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
-      columns = Array.from(allKeys);
+    try {
+      const pageNum = p !== undefined ? p : page;
+      await documentStore.loadDocuments(connectionId, database, collection, pageNum, buildFilterQuery(), buildSortQuery());
+      documents = [...documentStore.documents];
+      totalCount = documentStore.totalCount;
+      page = documentStore.page;
+      if (documents.length > 0) {
+        const allKeys = new Set<string>(); allKeys.add('_id');
+        documents.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
+        columns = Array.from(allKeys);
+      }
+    } catch (e) {
+      console.error('Query failed:', e);
     }
     loading = false;
   }
