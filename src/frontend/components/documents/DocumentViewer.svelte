@@ -305,6 +305,8 @@
       <DataTable
         data={documents}
         {columns}
+        {sortField}
+        {sortDir}
         onRowClick={(doc, idx) => selectDoc(doc, idx)}
         onSort={(field, dir) => { sortField = field; sortDir = dir || 'asc'; executeQuery(0); }}
       />
