@@ -136,10 +136,24 @@
     if (thisQuery === queryId) loading = false;
   }
 
+  let lastLoadKey = '';
+
   $effect(() => {
-    const _key = `${connectionId}-${database}-${collection}`;
-    if (connectionId && database && collection) executeQuery(0);
-    else { documents = []; columns = []; totalCount = 0; }
+    const key = `${connectionId}-${database}-${collection}`;
+    if (key !== lastLoadKey && connectionId && database && collection) {
+      lastLoadKey = key;
+      page = 0;
+      filters = {};
+      sortField = '';
+      sortDir = 'asc';
+      executeQuery(0);
+    }
+    if (!connectionId || !database || !collection) {
+      documents = [];
+      columns = [];
+      totalCount = 0;
+      lastLoadKey = '';
+    }
   });
 
   function handleSort(field: string) {
