@@ -379,15 +379,17 @@
                       {@const ops = getFilterOps(ft)}
                       <div class="absolute top-full left-0 z-20 mt-1 w-56 rounded-lg border border-[#2D3A45] bg-[#1F2933] shadow-xl p-2">
                         <div class="mb-2 text-[10px] text-[#465A6B]">{ft} filter</div>
-                        <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] outline-none" bind:value={filters[col]?.op}>
+                        {@const currentOp = filters[col]?.op || 'eq'}
+                        {@const currentValue = filters[col]?.value || ''}
+                        <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] outline-none" value={currentOp} onchange={(e) => { filters = { ...filters, [col]: { op: (e.target as HTMLSelectElement).value, value: currentValue }}; }}>
                           {#each ops as op}
                             <option value={op.value}>{op.label}</option>
                           {/each}
                         </select>
-                        <input type="text" placeholder="Value..." value={filters[col]?.value || ''} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none"
-                          onkeydown={(e) => { if (e.key === 'Enter') { setFilter(col, filters[col]?.op || 'eq', (e.target as HTMLInputElement).value); } }} />
+                        <input type="text" placeholder="Value..." value={currentValue} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none"
+                          onkeydown={(e) => { if (e.key === 'Enter') { setFilter(col, currentOp, (e.target as HTMLInputElement).value); } }} />
                         <div class="flex gap-1">
-                          <button class="flex-1 rounded bg-[#00684A] px-2 py-1 text-[10px] text-white hover:bg-[#00C75A]" onclick={() => { const inp = document.querySelector(`[data-filter-input="${col}"]`) as HTMLInputElement; setFilter(col, filters[col]?.op || 'eq', inp?.value || ''); }}>Apply</button>
+                          <button class="flex-1 rounded bg-[#00684A] px-2 py-1 text-[10px] text-white hover:bg-[#00C75A]" onclick={() => { const inp = document.querySelector(`[data-filter-input="${col}"]`) as HTMLInputElement; setFilter(col, currentOp, inp?.value || ''); }}>Apply</button>
                           {#if filters[col]}
                             <button class="rounded px-2 py-1 text-[10px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10" onclick={() => clearFilter(col)}>Clear</button>
                           {/if}
