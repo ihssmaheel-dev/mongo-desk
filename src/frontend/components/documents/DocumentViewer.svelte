@@ -130,6 +130,8 @@
         const allKeys = new Set<string>(); allKeys.add('_id');
         documents.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
         columns = Array.from(allKeys);
+      } else if (columns.length === 0) {
+        columns = ['_id', ...Object.keys(filters)];
       }
     } catch (e) {
       console.error('Query failed:', e);
@@ -298,26 +300,20 @@
     </div>
   {:else if viewMode === 'table'}
     <div class="flex-1 overflow-hidden">
-      {#if documents.length === 0 && Object.keys(filters).length === 0 && !sortField}
-        <div class="flex h-full items-center justify-center">
-          <div class="text-center"><svg class="mx-auto mb-3 h-12 w-12 text-[#2D3A45]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><p class="text-[13px] text-[#7E97A7]">No documents found</p></div>
+      <DataTable
+        data={documents}
+        {columns}
+        {sortField}
+        {sortDir}
+        {filters}
+        onRowClick={(doc, idx) => selectDoc(doc, idx)}
+        onSort={(field, dir) => { sortField = field; sortDir = dir || 'asc'; executeQuery(0); }}
+        onFilter={(col) => openFilter(col)}
+      />
+      {#if documents.length === 0}
+        <div class="flex items-center justify-center py-8">
+          <span class="text-[12px] text-[#7E97A7]">{Object.keys(filters).length > 0 ? 'No results match your filters' : 'No documents in this collection'}</span>
         </div>
-      {:else}
-        <DataTable
-          data={documents}
-          {columns}
-          {sortField}
-          {sortDir}
-          {filters}
-          onRowClick={(doc, idx) => selectDoc(doc, idx)}
-          onSort={(field, dir) => { sortField = field; sortDir = dir || 'asc'; executeQuery(0); }}
-          onFilter={(col) => openFilter(col)}
-        />
-        {#if documents.length === 0}
-          <div class="flex items-center justify-center py-8">
-            <span class="text-[12px] text-[#7E97A7]">No results match your filters</span>
-          </div>
-        {/if}
       {/if}
     </div>
   {:else}
