@@ -303,16 +303,20 @@
     <div class="flex-1 overflow-auto">
       <table class="w-full border-collapse">
         <thead class="sticky top-0 z-10"><tr class="bg-[#0E1318]">
-          {#each columns as col}
-            <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap group">
-              <div class="flex items-center gap-1">
+          {#each columns as col, colIdx}
+            <th class="border-b border-r border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap group last:border-r-0">
+              <div class="flex items-center justify-between gap-2">
                 <button class="hover:text-[#C3D4DE] transition-colors {sortField === col ? 'text-[#00ED64]' : ''}" onclick={() => handleSort(col)}>
                   {#if col === '_id'}<span class="text-[#FFC010]">_id</span>{:else}{col}{/if}
-                  {#if sortField === col}<span class="ml-0.5">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
                 </button>
-                <button class="opacity-0 group-hover:opacity-100 {filters[col] ? 'opacity-100 !text-[#00ED64]' : 'text-[#465A6B]'} hover:text-[#C3D4DE] transition-all" onclick={() => openFilter(col)}>
-                  <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                </button>
+                <div class="flex items-center gap-1">
+                  {#if sortField === col}
+                    <span class="text-[#00ED64] text-[9px]">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                  {/if}
+                  <button class="opacity-0 group-hover:opacity-100 {filters[col] ? 'opacity-100 !text-[#00ED64]' : 'text-[#465A6B]'} hover:text-[#C3D4DE] transition-all" onclick={() => openFilter(col)}>
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                  </button>
+                </div>
               </div>
             </th>
           {/each}
@@ -320,7 +324,7 @@
         <tbody>
           {#each documents as doc, idx (JSON.stringify(doc._id))}
             <tr class="cursor-pointer border-b border-[#1F2933] hover:bg-[#161D24] {selectedIdx === idx ? 'bg-[#023430]' : ''}" onclick={() => selectDoc(doc, idx)}>
-              {#each columns as col}<td class="border-b border-[#1F2933] px-3 py-1.5 text-[11px] {getValueClass(doc[col])}"><span class="max-w-[200px] truncate block">{formatValue(doc[col])}</span></td>{/each}
+              {#each columns as col}<td class="border-b border-r border-[#1F2933] px-3 py-1.5 text-[11px] {getValueClass(doc[col])} last:border-r-0"><span class="max-w-[200px] truncate block">{formatValue(doc[col])}</span></td>{/each}
             </tr>
           {/each}
         </tbody>
