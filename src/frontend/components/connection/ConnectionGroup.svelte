@@ -1,12 +1,15 @@
 <script lang="ts">
   import type { ConnectionGroup } from '../../types/connection';
-  
-  let { group }: { group: ConnectionGroup } = $props();
+
+  let { group, isActive = false, onClick }: { group: ConnectionGroup; isActive?: boolean; onClick: () => void } = $props();
 </script>
 
-<div class="flex items-center gap-2 px-3 py-1">
-  <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+<button
+  class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-[#1F2933] {isActive ? 'bg-[#023430] text-[#C3D4DE]' : 'text-[#C3D4DE]'}"
+  onclick={onClick}
+>
+  <svg class="h-3.5 w-3.5 text-[#7E97A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
   </svg>
-  <span class="text-xs font-medium text-slate-600 dark:text-slate-400">{group.name}</span>
-</div>
+  <span class="flex-1 truncate text-[12px]">{group.name}</span>
+</button>

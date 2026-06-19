@@ -1,16 +1,15 @@
 <script lang="ts">
   import type { NewConnection } from '../../types/connection';
-  
+
   let { onSave, onCancel }: { onSave: (conn: NewConnection) => void; onCancel: () => void } = $props();
-  
+
   let name = $state('');
   let connectionString = $state('mongodb://localhost:27017');
   let connType = $state<'standalone' | 'replica_set' | 'sharded'>('standalone');
   let color = $state('#00ED64');
   let readOnly = $state(false);
   let sslEnabled = $state(false);
-  let groupId = $state<string | null>(null);
-  
+
   function handleSubmit() {
     onSave({
       name,
@@ -20,7 +19,7 @@
       read_only: readOnly,
       ssl_enabled: sslEnabled,
       ssl_config: null,
-      group_id: groupId,
+      group_id: null,
       tags: null,
     });
   }
@@ -28,101 +27,52 @@
 
 <form onsubmit={handleSubmit} class="space-y-4">
   <div>
-    <label for="name" class="block text-xs font-medium text-slate-600 dark:text-slate-400">
-      Name
-    </label>
-    <input
-      id="name"
-      type="text"
-      bind:value={name}
-      class="mt-1 block w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-brand-evergreen focus:outline-none focus:ring-1 focus:ring-brand-evergreen dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-      placeholder="My MongoDB Server"
-      required
-    />
+    <label for="conn-name" class="mb-1 block text-[11px] font-medium text-[#7E97A7]">Name</label>
+    <input id="conn-name" type="text" bind:value={name} placeholder="My MongoDB Server" required
+      class="flex h-10 w-full rounded-md border border-[#2D3A45] bg-[#0E1318] px-3 py-2 text-sm text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:ring-2 focus:ring-[#00ED64] focus:ring-offset-0" />
   </div>
-  
+
   <div>
-    <label for="type" class="block text-xs font-medium text-slate-600 dark:text-slate-400">
-      Connection Type
-    </label>
-    <select
-      id="type"
-      bind:value={connType}
-      class="mt-1 block w-full rounded-sm border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-evergreen focus:outline-none focus:ring-1 focus:ring-brand-evergreen dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-    >
+    <label for="conn-type" class="mb-1 block text-[11px] font-medium text-[#7E97A7]">Connection Type</label>
+    <select id="conn-type" bind:value={connType}
+      class="flex h-10 w-full items-center rounded-md border border-[#2D3A45] bg-[#0E1318] px-3 py-2 text-sm text-[#C3D4DE] outline-none focus:ring-2 focus:ring-[#00ED64] focus:ring-offset-0">
       <option value="standalone">Standalone</option>
       <option value="replica_set">Replica Set</option>
       <option value="sharded">Sharded Cluster</option>
     </select>
   </div>
-  
+
   <div>
-    <label for="connectionString" class="block text-xs font-medium text-slate-600 dark:text-slate-400">
-      Connection String
-    </label>
-    <input
-      id="connectionString"
-      type="text"
-      bind:value={connectionString}
-      class="mt-1 block w-full rounded-sm border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-brand-evergreen focus:outline-none focus:ring-1 focus:ring-brand-evergreen dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-      placeholder="mongodb://localhost:27017"
-      required
-    />
+    <label for="conn-string" class="mb-1 block text-[11px] font-medium text-[#7E97A7]">Connection String</label>
+    <input id="conn-string" type="text" bind:value={connectionString} placeholder="mongodb://localhost:27017" required
+      class="flex h-10 w-full rounded-md border border-[#2D3A45] bg-[#0E1318] px-3 py-2 font-mono text-sm text-[#C3D4DE] placeholder-[#465A6B] outline-none focus:ring-2 focus:ring-[#00ED64] focus:ring-offset-0" />
   </div>
-  
-  <div class="flex items-center gap-2">
-    <input
-      id="readOnly"
-      type="checkbox"
-      bind:checked={readOnly}
-      class="h-4 w-4 rounded border-slate-300 text-brand-evergreen focus:ring-brand-evergreen"
-    />
-    <label for="readOnly" class="text-sm text-slate-600 dark:text-slate-400">
-      Read Only Mode
+
+  <div class="flex gap-6">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" bind:checked={readOnly} class="h-4 w-4 rounded border-[#2D3A45] bg-[#0E1318]" />
+      <span class="text-[12px] text-[#7E97A7]">Read Only</span>
+    </label>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" bind:checked={sslEnabled} class="h-4 w-4 rounded border-[#2D3A45] bg-[#0E1318]" />
+      <span class="text-[12px] text-[#7E97A7]">SSL/TLS</span>
     </label>
   </div>
-  
-  <div class="flex items-center gap-2">
-    <input
-      id="sslEnabled"
-      type="checkbox"
-      bind:checked={sslEnabled}
-      class="h-4 w-4 rounded border-slate-300 text-brand-evergreen focus:ring-brand-evergreen"
-    />
-    <label for="sslEnabled" class="text-sm text-slate-600 dark:text-slate-400">
-      Use SSL/TLS
-    </label>
-  </div>
-  
+
   <div>
-    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400">
-      Color
-    </label>
-    <div class="mt-1 flex gap-2">
+    <label class="mb-1 block text-[11px] font-medium text-[#7E97A7]">Color</label>
+    <div class="flex gap-2">
       {#each ['#00ED64', '#5DD0FF', '#B79CFF', '#FF8966', '#FF5C5C'] as c}
-        <button
-          type="button"
-          class="h-6 w-6 rounded-full {color === c ? 'ring-2 ring-offset-2 ring-brand-evergreen' : ''}"
+        <button type="button"
+          class="h-6 w-6 rounded-full transition-all {color === c ? 'ring-2 ring-offset-2 ring-offset-[#1F2933] ring-[#C3D4DE] scale-110' : 'hover:scale-110'}"
           style="background-color: {c}"
-          onclick={() => color = c}
-        />
+          onclick={() => color = c}></button>
       {/each}
     </div>
   </div>
-  
-  <div class="flex justify-end gap-2 pt-4">
-    <button
-      type="button"
-      class="rounded-sm border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-      onclick={onCancel}
-    >
-      Cancel
-    </button>
-    <button
-      type="submit"
-      class="rounded-sm bg-brand-evergreen px-4 py-2 text-sm font-medium text-white hover:bg-brand-spring-dim"
-    >
-      Save
-    </button>
+
+  <div class="flex justify-end gap-2 pt-2">
+    <button type="button" class="rounded-md border border-[#2D3A45] px-4 py-2 text-[12px] text-[#7E97A7] hover:bg-[#2D3A45] hover:text-[#C3D4DE] transition-colors" onclick={onCancel}>Cancel</button>
+    <button type="submit" class="rounded-md bg-[#00684A] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#00C75A] transition-colors">Save</button>
   </div>
 </form>
