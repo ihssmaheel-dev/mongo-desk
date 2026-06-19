@@ -335,7 +335,7 @@
 <ConfirmDialog bind:open={showDeleteConfirm} title="Delete Document" message="Are you sure you want to delete this document?" confirmText="Delete" variant="danger" onConfirm={handleDelete} />
 
 {#if activeFilterCol}
-  <div class="fixed inset-0 z-50 flex items-end justify-center pb-20" role="dialog">
+  <div class="fixed inset-0 z-50 flex items-start justify-center pt-20" role="dialog">
     <button class="fixed inset-0 bg-black/40" onclick={() => activeFilterCol = ''}></button>
     <div class="relative w-full max-w-sm rounded-xl border border-[#2D3A45] bg-[#1F2933] shadow-2xl p-4" onclick={(e) => e.stopPropagation()}>
       <div class="mb-3 flex items-center justify-between">
