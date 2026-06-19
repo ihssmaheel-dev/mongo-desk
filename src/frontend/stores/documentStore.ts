@@ -11,7 +11,7 @@ class DocumentStore {
   database = '';
   collection = '';
 
-  async loadDocuments(connectionId: string, database: string, collection: string, page: number = 0) {
+  async loadDocuments(connectionId: string, database: string, collection: string, page: number = 0, filter?: string, sort?: string) {
     this.connectionId = connectionId;
     this.database = database;
     this.collection = collection;
@@ -23,6 +23,8 @@ class DocumentStore {
         connection_id: connectionId,
         database,
         collection,
+        filter: filter || null,
+        sort: sort || null,
         page,
         page_size: this.pageSize,
       }
@@ -47,9 +49,6 @@ class DocumentStore {
         document: doc,
       }
     });
-    if (!error) {
-      await this.loadDocuments(this.connectionId, this.database, this.collection, this.page);
-    }
     return !error;
   }
 
@@ -63,9 +62,6 @@ class DocumentStore {
         update,
       }
     });
-    if (!error) {
-      await this.loadDocuments(this.connectionId, this.database, this.collection, this.page);
-    }
     return !error;
   }
 
@@ -78,22 +74,7 @@ class DocumentStore {
         id,
       }
     });
-    if (!error) {
-      await this.loadDocuments(this.connectionId, this.database, this.collection, this.page);
-    }
     return !error;
-  }
-
-  nextPage() {
-    if (this.documents.length === this.pageSize) {
-      this.loadDocuments(this.connectionId, this.database, this.collection, this.page + 1);
-    }
-  }
-
-  prevPage() {
-    if (this.page > 0) {
-      this.loadDocuments(this.connectionId, this.database, this.collection, this.page - 1);
-    }
   }
 
   reset() {

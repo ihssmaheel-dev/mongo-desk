@@ -3,25 +3,49 @@
   import ActivityBar from './ActivityBar.svelte';
   import Sidebar from './Sidebar.svelte';
   import StatusBar from './StatusBar.svelte';
+  import TabBar from './TabBar.svelte';
   import ToastContainer from '../common/ToastContainer.svelte';
   import ErrorBoundary from '../common/ErrorBoundary.svelte';
   import DocumentViewer from '../documents/DocumentViewer.svelte';
   import { connectionStore } from '../../stores/connectionStore';
 
   let activeView = $state('connections');
-  let activeDatabase = $state('');
-  let activeCollection = $state('');
+  let tabs = $state<{ id: string; title: string; type: string; db: string; coll: string }[]>([]);
+  let activeTabId = $state<string | null>(null);
   let activeConnectionId = $state('');
 
-  function handleSelectCollection(db: string, coll: string) {
-    activeDatabase = db;
-    activeCollection = coll;
-  }
+  let activeDatabase = $derived(tabs.find(t => t.id === activeTabId)?.db || '');
+  let activeCollection = $derived(tabs.find(t => t.id === activeTabId)?.coll || '');
 
   function handleSelectConnection(id: string) {
     activeConnectionId = id;
-    activeDatabase = '';
-    activeCollection = '';
+    activeTabId = null;
+  }
+
+  function handleSelectCollection(db: string, coll: string) {
+    const existing = tabs.find(t => t.db === db && t.coll === coll);
+    if (existing) {
+      activeTabId = existing.id;
+    } else {
+      const newTab = { id: crypto.randomUUID(), title: coll, type: 'collection', db, coll };
+      tabs = [...tabs, newTab];
+      activeTabId = newTab.id;
+    }
+  }
+
+  function handleSelectTab(id: string) {
+    activeTabId = id;
+  }
+
+  function handleCloseTab(id: string) {
+    tabs = tabs.filter(t => t.id !== id);
+    if (activeTabId === id) {
+      activeTabId = tabs.length > 0 ? tabs[tabs.length - 1].id : null;
+    }
+  }
+
+  function handleAddTab() {
+    // Add a new empty tab (could open a query editor in the future)
   }
 </script>
 
@@ -33,9 +57,13 @@
     <Sidebar onSelectCollection={handleSelectCollection} onSelectConnection={handleSelectConnection} />
 
     <div class="flex flex-1 flex-col overflow-hidden">
+      {#if tabs.length > 0}
+        <TabBar {tabs} {activeTabId} onSelect={handleSelectTab} onClose={handleCloseTab} onAdd={handleAddTab} />
+      {/if}
+
       <div class="flex-1 overflow-hidden bg-[#0E1318]">
         <ErrorBoundary>
-          {#if activeCollection && activeConnectionId}
+          {#if activeTabId && activeCollection && activeConnectionId}
             <DocumentViewer
               connectionId={activeConnectionId}
               database={activeDatabase}
