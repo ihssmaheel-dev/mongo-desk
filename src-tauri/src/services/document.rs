@@ -86,6 +86,7 @@ impl DocumentService {
         }
 
         let mut cursor = coll.find(filter_doc)
+            .with_options(opts)
             .await
             .map_err(|e| AppError::Internal {
                 code: "ERR_INTERNAL".into(),
