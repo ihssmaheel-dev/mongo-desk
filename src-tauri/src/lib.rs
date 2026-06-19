@@ -43,6 +43,8 @@ pub fn run() {
             commands::document::insert_document,
             commands::document::update_document,
             commands::document::delete_document,
+            commands::query::execute_query,
+            commands::query::validate_query,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

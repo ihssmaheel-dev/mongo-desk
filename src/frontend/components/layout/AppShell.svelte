@@ -7,27 +7,38 @@
   import ToastContainer from '../common/ToastContainer.svelte';
   import ErrorBoundary from '../common/ErrorBoundary.svelte';
   import DocumentViewer from '../documents/DocumentViewer.svelte';
+  import QueryPage from '../query/QueryPage.svelte';
   import { connectionStore } from '../../stores/connectionStore';
 
   let activeView = $state('connections');
-  let tabs = $state<{ id: string; title: string; type: string; db: string; coll: string }[]>([]);
+  let tabs = $state<{ id: string; title: string; type: string; db?: string; coll?: string }[]>([]);
   let activeTabId = $state<string | null>(null);
   let activeConnectionId = $state('');
 
-  let activeDatabase = $derived(tabs.find(t => t.id === activeTabId)?.db || '');
-  let activeCollection = $derived(tabs.find(t => t.id === activeTabId)?.coll || '');
+  let activeTab = $derived(tabs.find(t => t.id === activeTabId));
+  let activeDatabase = $derived(activeTab?.db || '');
+  let activeCollection = $derived(activeTab?.coll || '');
+
+  let availableCollections = $state<string[]>([]);
 
   function handleSelectConnection(id: string) {
     activeConnectionId = id;
     activeTabId = null;
+    tabs = [];
+  }
+
+  async function loadCollections(db: string) {
+    const { tauriInvoke } = await import('../../services/tauriBridge');
+    const { data } = await tauriInvoke<{ name: string }[]>('list_collections', { connectionId: activeConnectionId, database: db });
+    availableCollections = data?.map(c => c.name) || [];
   }
 
   function handleSelectCollection(db: string, coll: string) {
-    const existing = tabs.find(t => t.db === db && t.coll === coll);
+    const existing = tabs.find(t => t.type === 'document' && t.db === db && t.coll === coll);
     if (existing) {
       activeTabId = existing.id;
     } else {
-      const newTab = { id: crypto.randomUUID(), title: coll, type: 'collection', db, coll };
+      const newTab = { id: crypto.randomUUID(), title: coll, type: 'document', db, coll };
       tabs = [...tabs, newTab];
       activeTabId = newTab.id;
     }
@@ -44,8 +55,19 @@
     }
   }
 
-  function handleAddTab() {
-    // Add a new empty tab (could open a query editor in the future)
+  async function openQueryTab() {
+    if (!activeConnectionId) return;
+    const existing = tabs.find(t => t.type === 'query');
+    if (existing) {
+      activeTabId = existing.id;
+    } else {
+      const newTab = { id: crypto.randomUUID(), title: 'Query', type: 'query' };
+      tabs = [...tabs, newTab];
+      activeTabId = newTab.id;
+    }
+    if (activeDatabase) {
+      await loadCollections(activeDatabase);
+    }
   }
 </script>
 
@@ -53,17 +75,26 @@
   <TitleBar />
 
   <div class="flex flex-1 overflow-hidden">
-    <ActivityBar {activeView} onViewChange={(v) => activeView = v} />
+    <ActivityBar {activeView} onViewChange={(v) => {
+      activeView = v;
+      if (v === 'query') openQueryTab();
+    }} />
     <Sidebar onSelectCollection={handleSelectCollection} onSelectConnection={handleSelectConnection} />
 
     <div class="flex flex-1 flex-col overflow-hidden">
       {#if tabs.length > 0}
-        <TabBar {tabs} {activeTabId} onSelect={handleSelectTab} onClose={handleCloseTab} onAdd={handleAddTab} />
+        <TabBar {tabs} {activeTabId} onSelect={handleSelectTab} onClose={handleCloseTab} onAdd={() => openQueryTab()} />
       {/if}
 
       <div class="flex-1 overflow-hidden bg-[#0E1318]">
         <ErrorBoundary>
-          {#if activeTabId && activeCollection && activeConnectionId}
+          {#if activeTab?.type === 'query' && activeConnectionId}
+            <QueryPage
+              connectionId={activeConnectionId}
+              database={activeDatabase || ''}
+              collections={availableCollections}
+            />
+          {:else if activeTab?.type === 'document' && activeCollection && activeConnectionId}
             <DocumentViewer
               connectionId={activeConnectionId}
               database={activeDatabase}
@@ -71,15 +102,15 @@
               onSelect={handleSelectCollection}
             />
           {:else if activeConnectionId}
-            <div class="flex h-full items-center justify-center bg-[#0E1318]">
+            <div class="flex h-full items-center justify-center">
               <div class="text-center">
                 <svg class="mx-auto mb-4 h-16 w-16 text-[#2D3A45]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H6a2 2 0 00-2 2z"/></svg>
                 <h2 class="mb-1 text-[16px] font-semibold text-[#C3D4DE]">Connected</h2>
-                <p class="text-[13px] text-[#7E97A7]">Select a collection from the sidebar to view documents</p>
+                <p class="text-[13px] text-[#7E97A7]">Select a collection or open Query Runner</p>
               </div>
             </div>
           {:else}
-            <div class="flex h-full items-center justify-center bg-[#0E1318]">
+            <div class="flex h-full items-center justify-center">
               <div class="text-center">
                 <div class="mb-4 flex items-center justify-center gap-3">
                   <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#00684A] to-[#00ED64]">

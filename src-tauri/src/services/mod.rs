@@ -4,4 +4,5 @@ pub mod database;
 pub mod document;
 pub mod encryption_service;
 pub mod keychain_service;
+pub mod query;
 pub mod worker_pool;
