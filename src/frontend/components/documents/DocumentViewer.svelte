@@ -118,7 +118,7 @@
 
   async function executeQuery(p?: number) {
     const thisQuery = ++queryId;
-    loading = true; columns = []; selectedDoc = null; selectedIdx = -1;
+    loading = true; selectedDoc = null; selectedIdx = -1;
     try {
       const pageNum = p !== undefined ? p : page;
       await documentStore.loadDocuments(connectionId, database, collection, pageNum, buildFilterQuery(), buildSortQuery());
@@ -130,8 +130,6 @@
         const allKeys = new Set<string>(); allKeys.add('_id');
         documents.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
         columns = Array.from(allKeys);
-      } else if (columns.length === 0) {
-        columns = ['_id', ...Object.keys(filters)];
       }
     } catch (e) {
       console.error('Query failed:', e);
