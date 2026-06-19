@@ -29,6 +29,7 @@
   let activeFilterCol = $state('');
   let filterOp = $state('eq');
   let filterValue = $state('');
+  let queryId = $state(0);
 
   const pageSize = 50;
   const totalPages = $derived(Math.ceil(totalCount / pageSize));
@@ -115,10 +116,12 @@
   }
 
   async function executeQuery(p?: number) {
+    const thisQuery = ++queryId;
     loading = true; columns = []; selectedDoc = null; selectedIdx = -1;
     try {
       const pageNum = p !== undefined ? p : page;
       await documentStore.loadDocuments(connectionId, database, collection, pageNum, buildFilterQuery(), buildSortQuery());
+      if (thisQuery !== queryId) return;
       documents = [...documentStore.documents];
       totalCount = documentStore.totalCount;
       page = documentStore.page;
@@ -130,7 +133,7 @@
     } catch (e) {
       console.error('Query failed:', e);
     }
-    loading = false;
+    if (thisQuery === queryId) loading = false;
   }
 
   $effect(() => {
