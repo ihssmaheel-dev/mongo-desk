@@ -128,7 +128,7 @@
         <thead class="sticky top-0 z-10 bg-[#0E1318]">
           <tr>
             {#each results.length > 0 ? Object.keys(results[0]) : [] as col}
-              <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[#7E97A7] whitespace-nowrap">
+              <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap">
                 {col === '_id' ? 'id' : col}
               </th>
             {/each}

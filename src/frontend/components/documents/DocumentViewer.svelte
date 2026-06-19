@@ -231,7 +231,7 @@
         <thead class="sticky top-0 z-10">
           <tr class="bg-[#0E1318]">
             {#each columns as col}
-              <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[#7E97A7] whitespace-nowrap cursor-pointer hover:text-[#C3D4DE] transition-colors" onclick={() => handleSort(col)}>
+              <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap cursor-pointer hover:text-[#C3D4DE] transition-colors" onclick={() => handleSort(col)}>
                 {#if col === '_id'}
                   <span class="text-[#FFC010]">_id</span>
                 {:else}
