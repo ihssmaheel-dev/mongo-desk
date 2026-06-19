@@ -1,6 +1,7 @@
 <script lang="ts">
   import { documentStore } from '../../stores/documentStore';
   import ConfirmDialog from '../common/ConfirmDialog.svelte';
+  import DataTable from './DataTable.svelte';
 
   let { connectionId, database, collection, onSelect }: {
     connectionId: string;
@@ -300,35 +301,13 @@
       <div class="text-center"><svg class="mx-auto mb-3 h-12 w-12 text-[#2D3A45]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><p class="text-[13px] text-[#7E97A7]">No documents found</p></div>
     </div>
   {:else if viewMode === 'table'}
-    <div class="flex-1 overflow-auto">
-      <table class="w-full border-collapse">
-        <thead class="sticky top-0 z-10"><tr class="bg-[#0E1318]">
-          {#each columns as col, colIdx}
-            <th class="border-b border-r border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap group last:border-r-0">
-              <div class="flex items-center justify-between gap-2">
-                <button class="hover:text-[#C3D4DE] transition-colors {sortField === col ? 'text-[#00ED64]' : ''}" onclick={() => handleSort(col)}>
-                  {#if col === '_id'}<span class="text-[#FFC010]">_id</span>{:else}{col}{/if}
-                </button>
-                <div class="flex items-center gap-1">
-                  {#if sortField === col}
-                    <span class="text-[#00ED64] text-[9px]">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                  {/if}
-                  <button class="opacity-0 group-hover:opacity-100 {filters[col] ? 'opacity-100 !text-[#00ED64]' : 'text-[#465A6B]'} hover:text-[#C3D4DE] transition-all" onclick={() => openFilter(col)}>
-                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                  </button>
-                </div>
-              </div>
-            </th>
-          {/each}
-        </tr></thead>
-        <tbody>
-          {#each documents as doc, idx (JSON.stringify(doc._id))}
-            <tr class="cursor-pointer border-b border-[#1F2933] hover:bg-[#161D24] {selectedIdx === idx ? 'bg-[#023430]' : ''}" onclick={() => selectDoc(doc, idx)}>
-              {#each columns as col}<td class="border-b border-r border-[#1F2933] px-3 py-1.5 text-[11px] {getValueClass(doc[col])} last:border-r-0"><span class="max-w-[200px] truncate block">{formatValue(doc[col])}</span></td>{/each}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+    <div class="flex-1 overflow-hidden">
+      <DataTable
+        data={documents}
+        {columns}
+        onRowClick={(doc, idx) => selectDoc(doc, idx)}
+        onSort={(field, dir) => { sortField = field; sortDir = dir || 'asc'; executeQuery(0); }}
+      />
     </div>
   {:else}
     <div class="flex-1 overflow-auto p-4"><pre class="text-[11px] font-mono text-[#C3D4DE] whitespace-pre-wrap">{JSON.stringify(documents, null, 2)}</pre></div>
