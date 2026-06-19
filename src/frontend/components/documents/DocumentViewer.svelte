@@ -18,23 +18,146 @@
   let columns = $state<string[]>([]);
   let showDeleteConfirm = $state(false);
   let viewMode = $state<'table' | 'json'>('table');
-  let searchQuery = $state('');
   let sortField = $state('');
   let sortDir = $state<'asc' | 'desc'>('asc');
   let showInsertDialog = $state(false);
   let showEditDialog = $state(false);
   let insertJson = $state('{\n  \n}');
   let editJson = $state('');
+  let showFullPreview = $state(false);
+
+  let filters = $state<Record<string, { op: string; value: string }>>({});
+  let activeFilterCol = $state('');
+
+  let builtQuery = $derived(() => {
+    const q: any = {};
+    const filterObj: any = {};
+    for (const [col, f] of Object.entries(filters)) {
+      if (!f.value) continue;
+      const val = detectType(f.value);
+      switch (f.op) {
+        case 'eq': filterObj[col] = val; break;
+        case 'ne': filterObj[col] = { $ne: val }; break;
+        case 'gt': filterObj[col] = { $gt: val }; break;
+        case 'gte': filterObj[col] = { $gte: val }; break;
+        case 'lt': filterObj[col] = { $lt: val }; break;
+        case 'lte': filterObj[col] = { $lte: val }; break;
+        case 'contains': filterObj[col] = { $regex: f.value, $options: 'i' }; break;
+        case 'regex': filterObj[col] = { $regex: f.value }; break;
+      }
+    }
+    if (Object.keys(filterObj).length > 0) q.filter = filterObj;
+    if (sortField) q.sort = { [sortField]: sortDir === 'asc' ? 1 : -1 };
+    return JSON.stringify(q, null, 2);
+  });
+
+  function detectType(val: string): any {
+    if (val === 'null') return null;
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    if (/^-?\d+$/.test(val)) return parseInt(val);
+    if (/^-?\d+\.\d+$/.test(val)) return parseFloat(val);
+    if (/^\d{4}-\d{2}-\d{2}/.test(val)) return { $date: val };
+    return val;
+  }
+
+  function getFieldType(col: string): string {
+    if (documents.length === 0) return 'string';
+    for (const doc of documents) {
+      const val = doc[col];
+      if (val === null || val === undefined) continue;
+      if (typeof val === 'number') return 'number';
+      if (typeof val === 'boolean') return 'boolean';
+      if (typeof val === 'object' && val.$oid) return 'objectId';
+      if (typeof val === 'object' && val.$date) return 'date';
+      if (typeof val === 'object' && Array.isArray(val)) return 'array';
+      if (typeof val === 'object') return 'object';
+    }
+    return 'string';
+  }
+
+  function getFilterOps(fieldType: string): { value: string; label: string }[] {
+    switch (fieldType) {
+      case 'number': return [
+        { value: 'eq', label: '= Equals' },
+        { value: 'ne', label: '≠ Not equals' },
+        { value: 'gt', label: '> Greater than' },
+        { value: 'gte', label: '≥ Greater or equal' },
+        { value: 'lt', label: '< Less than' },
+        { value: 'lte', label: '≤ Less or equal' },
+      ];
+      case 'date': return [
+        { value: 'eq', label: '= Equals' },
+        { value: 'gt', label: '> After' },
+        { value: 'gte', label: '≥ After or equal' },
+        { value: 'lt', label: '< Before' },
+        { value: 'lte', label: '≤ Before or equal' },
+      ];
+      default: return [
+        { value: 'eq', label: '= Equals' },
+        { value: 'ne', label: '≠ Not equals' },
+        { value: 'contains', label: 'Contains' },
+        { value: 'regex', label: 'Regex' },
+      ];
+    }
+  }
+
+  function setFilter(col: string, op: string, value: string) {
+    if (!value) {
+      const newFilters = { ...filters };
+      delete newFilters[col];
+      filters = newFilters;
+    } else {
+      filters = { ...filters, [col]: { op, value } };
+    }
+    activeFilterCol = '';
+    executeQuery();
+  }
+
+  function clearFilter(col: string) {
+    const newFilters = { ...filters };
+    delete newFilters[col];
+    filters = newFilters;
+    executeQuery();
+  }
+
+  function clearAllFilters() {
+    filters = {};
+    sortField = '';
+    sortDir = 'asc';
+    executeQuery();
+  }
 
   const pageSize = 50;
   const totalPages = $derived(Math.ceil(totalCount / pageSize));
 
-  async function loadDocs(p: number = 0, filter?: string, sort?: string) {
+  async function executeQuery() {
     loading = true;
     columns = [];
     selectedDoc = null;
     selectedIdx = -1;
-    await documentStore.loadDocuments(connectionId, database, collection, p, filter, sort);
+
+    const q: any = {};
+    const filterObj: any = {};
+    for (const [col, f] of Object.entries(filters)) {
+      if (!f.value) continue;
+      const val = detectType(f.value);
+      switch (f.op) {
+        case 'eq': filterObj[col] = val; break;
+        case 'ne': filterObj[col] = { $ne: val }; break;
+        case 'gt': filterObj[col] = { $gt: val }; break;
+        case 'gte': filterObj[col] = { $gte: val }; break;
+        case 'lt': filterObj[col] = { $lt: val }; break;
+        case 'lte': filterObj[col] = { $lte: val }; break;
+        case 'contains': filterObj[col] = { $regex: f.value, $options: 'i' }; break;
+        case 'regex': filterObj[col] = { $regex: f.value }; break;
+      }
+    }
+    if (Object.keys(filterObj).length > 0) q.filter = filterObj;
+    if (sortField) q.sort = { [sortField]: sortDir === 'asc' ? 1 : -1 };
+
+    const filterStr = Object.keys(q).length > 0 ? JSON.stringify(q) : undefined;
+    await documentStore.loadDocuments(connectionId, database, collection, 0, filterStr);
     documents = [...documentStore.documents];
     totalCount = documentStore.totalCount;
     page = documentStore.page;
@@ -52,7 +175,7 @@
   $effect(() => {
     const _key = `${connectionId}-${database}-${collection}`;
     if (connectionId && database && collection) {
-      loadDocs(0);
+      executeQuery();
     } else {
       documents = [];
       columns = [];
@@ -60,18 +183,15 @@
     }
   });
 
-  function handleSearch() {
-    loadDocs(0, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
-  }
-
   function handleSort(field: string) {
     if (sortField === field) {
-      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      if (sortDir === 'asc') { sortDir = 'desc'; }
+      else { sortField = ''; sortDir = 'asc'; }
     } else {
       sortField = field;
       sortDir = 'asc';
     }
-    loadDocs(0, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
+    executeQuery();
   }
 
   function selectDoc(doc: any, idx: number) {
@@ -108,7 +228,7 @@
         await documentStore.deleteDocument(id);
         selectedDoc = null;
         selectedIdx = -1;
-        await loadDocs(page, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
+        await executeQuery();
       }
     }
   }
@@ -120,7 +240,7 @@
       if (success) {
         showInsertDialog = false;
         insertJson = '{\n  \n}';
-        await loadDocs(0, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
+        await executeQuery();
       }
     } catch (e) {
       alert('Invalid JSON: ' + (e as Error).message);
@@ -145,15 +265,13 @@
           showEditDialog = false;
           selectedDoc = null;
           selectedIdx = -1;
-          await loadDocs(page, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
+          await executeQuery();
         }
       }
     } catch (e) {
       alert('Invalid JSON: ' + (e as Error).message);
     }
   }
-
-  let showFullPreview = $state(false);
 
   function highlightJson(obj: any, indent: number = 0): string {
     if (obj === null || obj === undefined) return '<span style="color:#7E97A7">null</span>';
@@ -176,32 +294,9 @@
     return String(obj);
   }
 
-  function goNext() {
-    if (documents.length >= pageSize) loadDocs(page + 1, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
-  }
-
-  function goPrev() {
-    if (page > 0) loadDocs(page - 1, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined);
-  }
+  function goNext() { if (documents.length >= pageSize) { page++; executeQuery(); } }
+  function goPrev() { if (page > 0) { page--; executeQuery(); } }
 </script>
-
-{#if showFullPreview && selectedDoc}
-  <div class="fixed inset-0 z-50 flex flex-col bg-[#0E1318]">
-    <div class="flex items-center justify-between border-b border-[#2D3A45] px-4 py-2 bg-[#161D24]">
-      <span class="text-[13px] font-semibold text-[#C3D4DE]">Document Preview</span>
-      <div class="flex items-center gap-2">
-        <button class="rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => navigator.clipboard.writeText(JSON.stringify(selectedDoc, null, 2))}>Copy JSON</button>
-        <button class="rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => { editJson = JSON.stringify(selectedDoc, null, 2); showEditDialog = true; showFullPreview = false; }}>Edit</button>
-        <button class="rounded p-1 text-[#465A6B] hover:bg-[#2D3A45] hover:text-[#C3D4DE]" onclick={() => showFullPreview = false}>
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-    </div>
-    <div class="flex-1 overflow-auto p-4">
-      <pre class="text-[12px] font-mono leading-relaxed whitespace-pre-wrap">{@html highlightJson(selectedDoc)}</pre>
-    </div>
-  </div>
-{/if}
 
 <div class="flex h-full flex-col bg-[#0E1318]">
   <div class="flex items-center justify-between border-b border-[#2D3A45] px-4 py-2 bg-[#161D24]">
@@ -226,7 +321,7 @@
           Delete
         </button>
       {/if}
-      <button class="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => loadDocs(0, searchQuery || undefined, sortField ? JSON.stringify({ [sortField]: sortDir === 'asc' ? 1 : -1 }) : undefined)}>
+      <button class="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={executeQuery}>
         <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         Refresh
       </button>
@@ -235,19 +330,10 @@
 
   {#if viewMode === 'table'}
     <div class="flex items-center gap-2 border-b border-[#2D3A45] px-4 py-1.5 bg-[#161D24]">
-      <div class="flex items-center gap-1.5 flex-1">
-        <svg class="h-3.5 w-3.5 text-[#465A6B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" bind:value={searchQuery} placeholder="Filter: field = value"
-          class="flex-1 bg-transparent text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none"
-          onkeydown={(e) => { if (e.key === 'Enter') handleSearch(); }} />
-        {#if searchQuery}
-          <button class="text-[#465A6B] hover:text-[#C3D4DE]" onclick={() => { searchQuery = ''; handleSearch(); }}>×</button>
-        {/if}
-      </div>
-      {#if sortField}
-        <button class="flex items-center gap-1 text-[10px] text-[#00ED64]" onclick={() => { sortField = ''; sortDir = 'asc'; loadDocs(0, searchQuery || undefined); }}>
-          Sort: {sortField} ({sortDir}) ×
-        </button>
+      <span class="text-[10px] text-[#465A6B]">Query:</span>
+      <code class="flex-1 truncate font-mono text-[10px] text-[#00ED64]">{builtQuery()}</code>
+      {#if Object.keys(filters).length > 0 || sortField}
+        <button class="text-[10px] text-[#FF5C5C] hover:text-[#FF8966]" onclick={clearAllFilters}>Clear all</button>
       {/if}
     </div>
   {/if}
@@ -272,15 +358,44 @@
         <thead class="sticky top-0 z-10">
           <tr class="bg-[#0E1318]">
             {#each columns as col}
-              <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap cursor-pointer hover:text-[#C3D4DE] transition-colors" onclick={() => handleSort(col)}>
-                {#if col === '_id'}
-                  <span class="text-[#FFC010]">_id</span>
-                {:else}
-                  {col}
-                {/if}
-                {#if sortField === col}
-                  <span class="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                {/if}
+              <th class="border-b border-[#2D3A45] px-3 py-2 text-left text-[10px] font-semibold text-[#7E97A7] whitespace-nowrap group">
+                <div class="flex items-center gap-1">
+                  <button class="hover:text-[#C3D4DE] transition-colors {sortField === col ? 'text-[#00ED64]' : ''}" onclick={() => handleSort(col)}>
+                    {#if col === '_id'}
+                      <span class="text-[#FFC010]">_id</span>
+                    {:else}
+                      {col}
+                    {/if}
+                    {#if sortField === col}
+                      <span class="ml-0.5">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    {/if}
+                  </button>
+                  <div class="relative">
+                    <button class="opacity-0 group-hover:opacity-100 {filters[col] ? 'opacity-100 text-[#00ED64]' : 'text-[#465A6B]'} hover:text-[#C3D4DE] transition-all" onclick={() => activeFilterCol = activeFilterCol === col ? '' : col}>
+                      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    </button>
+                    {#if activeFilterCol === col}
+                      {@const ft = getFieldType(col)}
+                      {@const ops = getFilterOps(ft)}
+                      <div class="absolute top-full left-0 z-20 mt-1 w-56 rounded-lg border border-[#2D3A45] bg-[#1F2933] shadow-xl p-2">
+                        <div class="mb-2 text-[10px] text-[#465A6B]">{ft} filter</div>
+                        <select class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] outline-none" bind:value={filters[col]?.op}>
+                          {#each ops as op}
+                            <option value={op.value}>{op.label}</option>
+                          {/each}
+                        </select>
+                        <input type="text" placeholder="Value..." value={filters[col]?.value || ''} class="mb-2 w-full rounded border border-[#2D3A45] bg-[#0E1318] px-2 py-1 text-[11px] text-[#C3D4DE] placeholder-[#465A6B] outline-none"
+                          onkeydown={(e) => { if (e.key === 'Enter') { setFilter(col, filters[col]?.op || 'eq', (e.target as HTMLInputElement).value); } }} />
+                        <div class="flex gap-1">
+                          <button class="flex-1 rounded bg-[#00684A] px-2 py-1 text-[10px] text-white hover:bg-[#00C75A]" onclick={() => { const inp = document.querySelector(`[data-filter-input="${col}"]`) as HTMLInputElement; setFilter(col, filters[col]?.op || 'eq', inp?.value || ''); }}>Apply</button>
+                          {#if filters[col]}
+                            <button class="rounded px-2 py-1 text-[10px] text-[#FF5C5C] hover:bg-[#FF5C5C]/10" onclick={() => clearFilter(col)}>Clear</button>
+                          {/if}
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
               </th>
             {/each}
           </tr>
@@ -288,10 +403,7 @@
         <tbody>
           {#each documents as doc, idx (JSON.stringify(doc._id))}
             {@const isSelected = selectedIdx === idx}
-            <tr
-              class="cursor-pointer border-b border-[#1F2933] transition-colors hover:bg-[#161D24] {isSelected ? 'bg-[#023430]' : ''}"
-              onclick={() => selectDoc(doc, idx)}
-            >
+            <tr class="cursor-pointer border-b border-[#1F2933] transition-colors hover:bg-[#161D24] {isSelected ? 'bg-[#023430]' : ''}" onclick={() => selectDoc(doc, idx)}>
               {#each columns as col}
                 {@const val = doc[col]}
                 <td class="border-b border-[#1F2933] px-3 py-1.5 text-[11px] {getValueClass(val)}">
@@ -335,6 +447,24 @@
     </div>
   {/if}
 </div>
+
+{#if showFullPreview && selectedDoc}
+  <div class="fixed inset-0 z-50 flex flex-col bg-[#0E1318]">
+    <div class="flex items-center justify-between border-b border-[#2D3A45] px-4 py-2 bg-[#161D24]">
+      <span class="text-[13px] font-semibold text-[#C3D4DE]">Document Preview</span>
+      <div class="flex items-center gap-2">
+        <button class="rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => navigator.clipboard.writeText(JSON.stringify(selectedDoc, null, 2))}>Copy JSON</button>
+        <button class="rounded px-2 py-1 text-[11px] text-[#7E97A7] hover:bg-[#1F2933] hover:text-[#C3D4DE] transition-colors" onclick={() => { editJson = JSON.stringify(selectedDoc, null, 2); showEditDialog = true; showFullPreview = false; }}>Edit</button>
+        <button class="rounded p-1 text-[#465A6B] hover:bg-[#2D3A45] hover:text-[#C3D4DE]" onclick={() => showFullPreview = false}>
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-auto p-4">
+      <pre class="text-[12px] font-mono leading-relaxed whitespace-pre-wrap">{@html highlightJson(selectedDoc)}</pre>
+    </div>
+  </div>
+{/if}
 
 <ConfirmDialog bind:open={showDeleteConfirm} title="Delete Document" message="Are you sure you want to delete this document? This action cannot be undone." confirmText="Delete" variant="danger" onConfirm={handleDelete} />
 
