@@ -1,4 +1,4 @@
-use mongodb::{Client, bson::Document, Collection};
+use mongodb::{Client, bson::Document, bson::Bson, Collection};
 use mongodb::options::FindOptions;
 
 use crate::error::AppError;
@@ -9,6 +9,36 @@ pub struct DocumentService;
 impl DocumentService {
     fn get_collection(client: &Client, db_name: &str, coll_name: &str) -> Collection<Document> {
         client.database(db_name).collection(coll_name)
+    }
+
+    fn convert_oids(doc: &mut Document) {
+        for (_, value) in doc.iter_mut() {
+            match value {
+                Bson::Document(sub_doc) => {
+                    if let Some(oid_str) = sub_doc.get_str("$oid").ok() {
+                        if let Ok(oid) = mongodb::bson::oid::ObjectId::parse_str(oid_str) {
+                            *value = Bson::ObjectId(oid);
+                        }
+                    } else {
+                        Self::convert_oids(sub_doc);
+                    }
+                }
+                Bson::Array(arr) => {
+                    for item in arr.iter_mut() {
+                        if let Bson::Document(sub_doc) = item {
+                            if let Some(oid_str) = sub_doc.get_str("$oid").ok() {
+                                if let Ok(oid) = mongodb::bson::oid::ObjectId::parse_str(oid_str) {
+                                    *item = Bson::ObjectId(oid);
+                                }
+                            } else {
+                                Self::convert_oids(sub_doc);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     pub async fn find_documents(
@@ -22,13 +52,15 @@ impl DocumentService {
     ) -> Result<DocumentPage, AppError> {
         let coll = Self::get_collection(client, db_name, coll_name);
 
-        let filter_doc = match filter {
+        let mut filter_doc = match filter {
             Some(f) if !f.is_empty() => {
                 serde_json::from_str::<Document>(f)
                     .map_err(|e| AppError::query_syntax(Some(e.to_string())))?
             }
             _ => Document::new(),
         };
+
+        Self::convert_oids(&mut filter_doc);
 
         let sort_doc = match sort {
             Some(s) if !s.is_empty() => {
