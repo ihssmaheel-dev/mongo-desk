@@ -34,21 +34,26 @@
   let filterDialogValue = $state('');
   let lastLoadKey = '';
   let queryId = $state(0);
+  let fieldTypes = $state<Record<string, string>>({});
 
   const pageSize = 50;
   const totalPages = $derived(Math.ceil(totalCount / pageSize));
 
   function getFieldType(col: string): string {
+    if (fieldTypes[col]) return fieldTypes[col];
     if (documents.length === 0) return 'string';
     for (const doc of documents) {
       const val = doc[col];
       if (val === null || val === undefined) continue;
-      if (typeof val === 'number') return 'number';
-      if (typeof val === 'boolean') return 'boolean';
-      if (typeof val === 'object' && val.$oid) return 'objectId';
-      if (typeof val === 'object' && val.$date) return 'date';
-      if (Array.isArray(val)) return 'array';
-      if (typeof val === 'object') return 'object';
+      let t = 'string';
+      if (typeof val === 'number') t = 'number';
+      else if (typeof val === 'boolean') t = 'boolean';
+      else if (typeof val === 'object' && val.$oid) t = 'objectId';
+      else if (typeof val === 'object' && val.$date) t = 'date';
+      else if (Array.isArray(val)) t = 'array';
+      else if (typeof val === 'object') t = 'object';
+      fieldTypes[col] = t;
+      return t;
     }
     return 'string';
   }
@@ -120,6 +125,9 @@
         const allKeys = new Set<string>(); allKeys.add('_id');
         documents.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
         columns = Array.from(allKeys);
+        for (const col of columns) {
+          if (!fieldTypes[col]) getFieldType(col);
+        }
       }
     } catch (e) { console.error('Query failed:', e); }
     if (thisQuery === queryId) loading = false;
